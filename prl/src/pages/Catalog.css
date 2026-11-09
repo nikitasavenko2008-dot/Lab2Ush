@@ -1,0 +1,15 @@
+.catalog {
+  padding: 20px;
+}
+
+.catalog h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+.cards-container {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
