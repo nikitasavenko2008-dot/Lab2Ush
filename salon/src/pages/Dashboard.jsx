@@ -48,7 +48,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Купон пользователя */}
       {auth.user?.coupon_code && (
         <div className="coupon-card">
           🎟 Ваш купон: <strong>{auth.user.coupon_code}</strong> —{" "}

@@ -16,14 +16,9 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Категории
   const [newCatName, setNewCatName] = useState("");
-
-  // Скидка на услугу
   const [discSvcId, setDiscSvcId] = useState("");
   const [discVal, setDiscVal] = useState("");
-
-  // Купон пользователю
   const [userCouponId, setUserCouponId] = useState("");
 
   useEffect(() => {
@@ -98,7 +93,6 @@ export default function Admin() {
 
       {!loading && (
         <>
-          {/* --- Категории --- */}
           <section className="admin-section">
             <h2>Категории</h2>
             <div className="admin-input-row">
@@ -118,7 +112,6 @@ export default function Admin() {
             </div>
           </section>
 
-          {/* --- Скидки на услуги --- */}
           <section className="admin-section">
             <h2>Общая скидка на услугу</h2>
             <div className="admin-input-row">
@@ -142,7 +135,6 @@ export default function Admin() {
             </div>
           </section>
 
-          {/* --- Выдача купонов --- */}
           <section className="admin-section">
             <h2>Персональные скидки (купон)</h2>
             <div className="admin-input-row">

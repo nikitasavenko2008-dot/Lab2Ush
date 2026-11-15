@@ -4,12 +4,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Файл базы данных лежит рядом с сервером, данные не теряются после перезапуска
 const DB = new DatabaseSync(path.join(__dirname, "salon.db"));
 
-// ============================================================
-//  Схема базы данных — 5 основных таблиц + категории и купоны
-// ============================================================
 function initDB() {
   DB.exec(`
     CREATE TABLE IF NOT EXISTS roles (
@@ -73,22 +69,16 @@ function initDB() {
   `);
 }
 
-// ============================================================
-//  Сид-данные
-// ============================================================
 function seedDB() {
-  // Роли
   DB.prepare("INSERT INTO roles (id, name) VALUES (1, 'admin'), (2, 'client')")
     .run();
 
-  // Категории (админ может добавлять через API)
   DB.prepare("INSERT INTO categories (name) VALUES (?)").run("Маникюр");
   DB.prepare("INSERT INTO categories (name) VALUES (?)").run("Стрижка");
   DB.prepare("INSERT INTO categories (name) VALUES (?)").run("Окрашивание");
   DB.prepare("INSERT INTO categories (name) VALUES (?)").run("Укладка");
   DB.prepare("INSERT INTO categories (name) VALUES (?)").run("Массаж");
 
-  // Купоны
   DB.prepare("INSERT INTO coupons (code, percent) VALUES (?, ?)")
     .run("WELCOME10", 10);
   DB.prepare("INSERT INTO coupons (code, percent) VALUES (?, ?)")
@@ -96,7 +86,6 @@ function seedDB() {
   DB.prepare("INSERT INTO coupons (code, percent) VALUES (?, ?)")
     .run("HOLIDAY15", 15);
 
-  // Услуги (10 шт, ~30% = 3 шт со скидкой)
   const services = [
     {
       name: "Классический маникюр",
@@ -112,7 +101,7 @@ function seedDB() {
       duration: 90,
       price: 2500,
       cat: "Маникюр",
-      disc: 10, // скидка
+      disc: 10,
     },
     {
       name: "Детская стрижка",
@@ -128,7 +117,7 @@ function seedDB() {
       duration: 60,
       price: 2000,
       cat: "Стрижка",
-      disc: 15, // скидка
+      disc: 15,
     },
     {
       name: "Окрашивание в один тон",
@@ -144,7 +133,7 @@ function seedDB() {
       duration: 180,
       price: 6000,
       cat: "Окрашивание",
-      disc: 20, // скидка
+      disc: 20,
     },
     {
       name: "Вечерняя укладка",
@@ -196,20 +185,17 @@ function seedDB() {
     );
   }
 
-  // Админ (пароль: admin)
   const adminHash = hashPwd("admin");
   DB.prepare(
     "INSERT INTO users (name, email, password, role_id) VALUES (?, ?, ?, 1)"
   ).run("Администратор", "admin@salon.ru", adminHash);
 
-  // Обычный клиент (пароль: client)
   const clientHash = hashPwd("client");
   DB.prepare(
     "INSERT INTO users (name, email, password, role_id, coupon_id) VALUES (?, ?, ?, 2, 1)"
   ).run("Иван Клиентов", "ivan@mail.ru", clientHash);
 }
 
-// Простой хеш пароля (SHA-256 с солью) — достаточно для учебного проекта
 function hashPwd(pw) {
   const salt = "salon_salt_2025";
   return crypto.createHash("sha256").update(pw + salt).digest("hex");
@@ -217,7 +203,6 @@ function hashPwd(pw) {
 
 initDB();
 
-// Сеем данные только если база пустая (иначе при перезапуске будут дубли)
 const userCount = DB.prepare("SELECT COUNT(*) AS c FROM users").get().c;
 if (userCount === 0) {
   seedDB();

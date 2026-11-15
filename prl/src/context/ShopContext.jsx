@@ -71,7 +71,6 @@ export function ShopProvider({ children }) {
   function toggleTheme() {
     setIsDark(!isDark);
   }
-
   const value = {
     cart,
     addToCart,

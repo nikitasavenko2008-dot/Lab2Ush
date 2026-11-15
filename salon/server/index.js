@@ -7,9 +7,6 @@ app.use(express.json());
 
 const PORT = 3001;
 
-// ============================================================
-//  Сессии: токен -> id пользователя
-// ============================================================
 const sessions = new Map();
 
 function hashPwd(pw) {
@@ -17,7 +14,6 @@ function hashPwd(pw) {
   return crypto.createHash("sha256").update(pw + salt).digest("hex");
 }
 
-// Доставает пользователя из заголовка Authorization: Bearer <token>
 function auth(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.replace("Bearer ", "");
@@ -40,7 +36,6 @@ function auth(req, res, next) {
   next();
 }
 
-// Пропускает дальше только администраторов
 function adminOnly(req, res, next) {
   if (req.user.role !== "admin") {
     return res.status(403).json({ error: "Только для администратора" });
@@ -48,9 +43,6 @@ function adminOnly(req, res, next) {
   next();
 }
 
-// ============================================================
-//  Каталог: категории и услуги
-// ============================================================
 app.get("/api/categories", (req, res) => {
   const rows = DB.prepare("SELECT id, name FROM categories ORDER BY id").all();
   res.json(rows);
@@ -67,16 +59,10 @@ app.get("/api/services", (req, res) => {
   res.json(rows);
 });
 
-// ============================================================
-//  Купоны (виды скидок) — нужны админу для выдачи
-// ============================================================
 app.get("/api/coupons", auth, adminOnly, (req, res) => {
   res.json(DB.prepare("SELECT id, code, percent FROM coupons ORDER BY id").all());
 });
 
-// ============================================================
-//  Авторизация
-// ============================================================
 app.post("/api/auth/login", (req, res) => {
   const { email, password } = req.body || {};
 
@@ -108,9 +94,6 @@ app.get("/api/me", auth, (req, res) => {
   res.json(req.user);
 });
 
-// ============================================================
-//  Записи и платежи (оформление корзины)
-// ============================================================
 app.post("/api/appointments", auth, (req, res) => {
   const items = req.body?.items;
 
@@ -145,7 +128,6 @@ app.post("/api/appointments", auth, (req, res) => {
         .json({ error: `Услуга ${item.id} не найдена` });
     }
 
-    // Сначала скидка товара, потом персональный купон пользователя
     const withServiceDiscount =
       service.price * (1 - (service.discount_percent || 0) / 100);
     const price = withServiceDiscount * (1 - couponPercent / 100);
@@ -179,9 +161,6 @@ app.get("/api/appointments", auth, (req, res) => {
   res.json(rows);
 });
 
-// ============================================================
-//  Админка: категории, скидка на услугу, купон пользователю
-// ============================================================
 app.post("/api/categories", auth, adminOnly, (req, res) => {
   const name = (req.body?.name || "").trim();
   if (!name) {
@@ -198,7 +177,6 @@ app.post("/api/categories", auth, adminOnly, (req, res) => {
   res.json(row);
 });
 
-// Общая скидка на конкретную услугу
 app.put("/api/services/:id/discount", auth, adminOnly, (req, res) => {
   const percent = Number(req.body?.percent);
   if (Number.isNaN(percent) || percent < 0 || percent > 90) {
@@ -219,7 +197,6 @@ app.put("/api/services/:id/discount", auth, adminOnly, (req, res) => {
   res.json({ id: service.id, discount_percent: percent });
 });
 
-// Персональная скидка: выдать пользователю купон
 app.put("/api/users/:id/coupon", auth, adminOnly, (req, res) => {
   const couponId = req.body?.coupon_id;
   const user = DB.prepare("SELECT id FROM users WHERE id = ?").get(

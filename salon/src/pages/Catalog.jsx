@@ -41,7 +41,6 @@ export default function Catalog() {
     );
   }
 
-  // Фильтрация по выбранным категориям
   const filtered =
     selectedCats.length === 0
       ? services

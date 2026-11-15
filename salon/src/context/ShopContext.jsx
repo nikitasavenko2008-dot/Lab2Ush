@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useReducer, useEffect } from "reac
 
 const ShopContext = createContext();
 
-// ---- корзина (useReducer) ----
 function cartReducer(state, action) {
   switch (action.type) {
     case "ADD": {
@@ -23,7 +22,6 @@ function cartReducer(state, action) {
   }
 }
 
-// ---- тема ----
 function getSavedTheme() {
   try {
     return localStorage.getItem("theme") === "dark";
@@ -32,7 +30,6 @@ function getSavedTheme() {
   }
 }
 
-// ---- авторизация ----
 function getSavedAuth() {
   try {
     const raw = localStorage.getItem("auth");
@@ -60,17 +57,14 @@ export function ShopProvider({ children }) {
     }
   }, [auth]);
 
-  // ---- корзина ----
   const addToCart = (service) =>
     dispatch({ type: "ADD", payload: service });
   const removeFromCart = (id) =>
     dispatch({ type: "REMOVE", payload: id });
   const clearCart = () => dispatch({ type: "CLEAR" });
 
-  // ---- тема ----
   const toggleTheme = () => setIsDark((d) => !d);
 
-  // ---- авторизация ----
   const login = (token, user) => setAuth({ token, user });
   const logout = () => setAuth({ token: null, user: null });
 

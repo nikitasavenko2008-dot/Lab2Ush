@@ -1,6 +1,3 @@
-// Прокси Vite: /api → localhost:3001
-// Каждый запрос возвращает { data, loading, error }
-
 let loadingMap = {};
 
 function setLoading(key, value) {
