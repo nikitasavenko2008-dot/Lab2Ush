@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useReducer } from "react";
+import { createContext, useContext, useState, useReducer, useEffect } from "react";
 
 const ShopContext = createContext();
 
@@ -17,6 +17,16 @@ function cartReducer(state, action) {
     }
     case "REMOVE_ITEM":
       return state.filter((item) => item.id !== action.payload);
+    case "INCREASE_QTY":
+      return state.map((item) =>
+        item.id === action.payload ? { ...item, qty: item.qty + 1 } : item
+      );
+    case "DECREASE_QTY":
+      return state.map((item) =>
+        item.id === action.payload && item.qty > 1
+          ? { ...item, qty: item.qty - 1 }
+          : item
+      );
     case "CLEAR":
       return [];
     default:
@@ -26,7 +36,17 @@ function cartReducer(state, action) {
 
 export function ShopProvider({ children }) {
   const [cart, cartDispatch] = useReducer(cartReducer, []);
-  const [isDark, setIsDark] = useState(false);
+
+  function getSavedTheme() {
+    const saved = localStorage.getItem("theme");
+    return saved === "dark";
+  }
+
+  const [isDark, setIsDark] = useState(getSavedTheme);
+
+  useEffect(() => {
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }, [isDark]);
 
   function addToCart(product) {
     cartDispatch({ type: "ADD_ITEM", payload: product });
@@ -34,6 +54,14 @@ export function ShopProvider({ children }) {
 
   function removeFromCart(id) {
     cartDispatch({ type: "REMOVE_ITEM", payload: id });
+  }
+
+  function increaseQty(id) {
+    cartDispatch({ type: "INCREASE_QTY", payload: id });
+  }
+
+  function decreaseQty(id) {
+    cartDispatch({ type: "DECREASE_QTY", payload: id });
   }
 
   function clearCart() {
@@ -48,6 +76,8 @@ export function ShopProvider({ children }) {
     cart,
     addToCart,
     removeFromCart,
+    increaseQty,
+    decreaseQty,
     clearCart,
     isDark,
     toggleTheme,

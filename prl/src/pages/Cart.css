@@ -30,6 +30,33 @@
   color: #e91e63;
 }
 
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.qty-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+}
+
+.qty-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .remove-btn {
   background: #f44336;
   color: #fff;

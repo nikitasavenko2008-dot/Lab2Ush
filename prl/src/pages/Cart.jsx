@@ -2,7 +2,7 @@ import { useShop } from "../context/ShopContext";
 import "./Cart.css";
 
 export default function Cart() {
-  const { cart, removeFromCart } = useShop();
+  const { cart, removeFromCart, increaseQty, decreaseQty } = useShop();
 
   const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
@@ -22,9 +22,23 @@ export default function Cart() {
         {cart.map((item) => (
           <div key={item.id} className="cart-item">
             <span className="cart-item-name">{item.name}</span>
-            <span className="cart-item-price">
-              {item.price} ₽ x {item.qty}
-            </span>
+            <span className="cart-item-price">{item.price} ₽</span>
+            <div className="qty-control">
+              <button
+                className="qty-btn"
+                onClick={() => decreaseQty(item.id)}
+                disabled={item.qty <= 1}
+              >
+                −
+              </button>
+              <span className="qty-value">{item.qty}</span>
+              <button
+                className="qty-btn"
+                onClick={() => increaseQty(item.id)}
+              >
+                +
+              </button>
+            </div>
             <button
               className="remove-btn"
               onClick={() => removeFromCart(item.id)}

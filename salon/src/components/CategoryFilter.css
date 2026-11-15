@@ -1,0 +1,32 @@
+.aside {
+  width: 200px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 16px;
+  align-self: flex-start;
+}
+
+.dark .aside {
+  background: #16213e;
+  border-color: #2e303a;
+}
+
+.aside h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cat-item input {
+  cursor: pointer;
+}
