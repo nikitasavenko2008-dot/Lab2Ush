@@ -44,7 +44,6 @@ export default function Catalog() {
     ? services
     : services.filter((s) => selectedCats.includes(s.category_id));
 
-  // Подсчёт количества товаров со скидкой (Требование 5: 30%)
   const discountedCount = services.filter((s) => s.discount_percent > 0).length;
 
   return (

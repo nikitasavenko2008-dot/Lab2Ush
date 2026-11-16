@@ -1,29 +1,21 @@
--- =======================================================
--- Скрипт создания базы данных для pgAdmin (PostgreSQL)
--- Лабораторная работа: Салон услуг
--- Преподаватель: Д.Д. Юшина
--- =======================================================
 
--- 1. Таблица ролей (Roles)
 CREATE TABLE IF NOT EXISTS roles (
     role_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL
 );
 
--- 2. Таблица категорий (Categories)
+
 CREATE TABLE IF NOT EXISTS categories (
     category_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE
 );
 
--- 3. Таблица скидочных купонов (Coupons)
 CREATE TABLE IF NOT EXISTS coupons (
     coupon_id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
     percent NUMERIC NOT NULL
 );
 
--- 4. Таблица пользователей (Users)
 CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -33,7 +25,6 @@ CREATE TABLE IF NOT EXISTS users (
     coupon_id INT REFERENCES coupons(coupon_id)
 );
 
--- 5. Таблица услуг (Services)
 CREATE TABLE IF NOT EXISTS services (
     service_id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
@@ -41,10 +32,10 @@ CREATE TABLE IF NOT EXISTS services (
     duration INT DEFAULT 60,
     price NUMERIC NOT NULL,
     category_id INT REFERENCES categories(category_id),
-    discount_percent NUMERIC DEFAULT 0
+    discount_percent NUMERIC DEFAULT 0,
+    image TEXT
 );
 
--- 6. Таблица записей (Appointments) — в точности как на слайде 2 Юшиной
 CREATE TABLE IF NOT EXISTS appointments (
     appointment_id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(user_id),
@@ -57,7 +48,6 @@ CREATE TABLE IF NOT EXISTS appointments (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Таблица платежей (Payments)
 CREATE TABLE IF NOT EXISTS payments (
     payment_id SERIAL PRIMARY KEY,
     appointment_id INT REFERENCES appointments(appointment_id),
@@ -67,15 +57,9 @@ CREATE TABLE IF NOT EXISTS payments (
     paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- =======================================================
--- Заполнение начальными данными (Семена)
--- =======================================================
-
--- Роли
 INSERT INTO roles (role_id, name) VALUES (1, 'admin'), (2, 'client')
 ON CONFLICT (role_id) DO NOTHING;
 
--- Категории (Требование 6)
 INSERT INTO categories (name) VALUES 
 ('Маникюр'),
 ('Стрижка'),
@@ -84,34 +68,30 @@ INSERT INTO categories (name) VALUES
 ('Массаж')
 ON CONFLICT (name) DO NOTHING;
 
--- Купоны (Требование 5)
 INSERT INTO coupons (code, percent) VALUES 
 ('WELCOME10', 10),
 ('VIP20', 20),
 ('HOLIDAY15', 15)
 ON CONFLICT (code) DO NOTHING;
 
--- Услуги (10 услуг, ровно 3 со скидкой = 30% каталога по Требованию 5)
-INSERT INTO services (name, description, duration, price, category_id, discount_percent) VALUES
-('Классический маникюр', 'Обработка кутикулы и придание формы ногтям', 60, 1500, 1, 0),
-('Маникюр с гель-лаком', 'Покрытие гель-лаком до 3 недель', 90, 2500, 1, 10),
-('Детская стрижка', 'Стрижка для детей до 12 лет', 30, 800, 2, 0),
-('Женская стрижка', 'Стрижка с мытьем головы и укладкой', 60, 2000, 2, 15),
-('Окрашивание в один тон', 'Однотонное стойкое окрашивание', 120, 3500, 3, 0),
-('Сложное окрашивание (Airtouch)', 'Балаяж, шатуш, аиртач', 180, 6000, 3, 20),
-('Вечерняя укладка', 'Укладка для торжественных мероприятий', 90, 2500, 4, 0),
-('Повседневная укладка', 'Легкая укладка феном и брашингом', 45, 1200, 4, 0),
-('Массаж головы', 'Расслабляющий массаж 30 минут', 30, 1000, 5, 0),
-('Комплекс: стрижка + укладка', 'Стрижка и стильная укладка', 90, 3000, 2, 0)
+INSERT INTO services (name, description, duration, price, category_id, discount_percent, image) VALUES
+('Классический маникюр', 'Обработка кутикулы и придание формы ногтям', 60, 1500, 1, 0, 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&auto=format&fit=crop&q=80'),
+('Маникюр с гель-лаком', 'Покрытие гель-лаком до 3 недель', 90, 2500, 1, 10, 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=500&auto=format&fit=crop&q=80'),
+('Детская стрижка', 'Стрижка для детей до 12 лет', 30, 800, 2, 0, 'https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=500&auto=format&fit=crop&q=80'),
+('Женская стрижка', 'Стрижка с мытьем головы и укладкой', 60, 2000, 2, 15, 'https://images.unsplash.com/photo-1560869713-7d0a29430803?w=500&auto=format&fit=crop&q=80'),
+('Окрашивание в один тон', 'Однотонное стойкое окрашивание', 120, 3500, 3, 0, 'https://images.unsplash.com/photo-1562322140-8baeececf3df?w=500&auto=format&fit=crop&q=80'),
+('Сложное окрашивание (Airtouch)', 'Балаяж, шатуш, аиртач', 180, 6000, 3, 20, 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&auto=format&fit=crop&q=80'),
+('Вечерняя укладка', 'Укладка для торжественных мероприятий', 90, 2500, 4, 0, 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=500&auto=format&fit=crop&q=80'),
+('Повседневная укладка', 'Легкая укладка феном и брашингом', 45, 1200, 4, 0, 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=500&auto=format&fit=crop&q=80'),
+('Массаж головы', 'Расслабляющий массаж 30 минут', 30, 1000, 5, 0, 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=500&auto=format&fit=crop&q=80'),
+('Комплекс: стрижка + укладка', 'Стрижка и стильная укладка', 90, 3000, 2, 0, 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=500&auto=format&fit=crop&q=80')
 ON CONFLICT DO NOTHING;
 
--- Пользователи (пароли простые для учебной проверки)
 INSERT INTO users (name, email, password, role_id, coupon_id) VALUES
 ('Администратор', 'admin@salon.ru', 'admin', 1, NULL),
 ('Иван Клиентов', 'ivan@mail.ru', 'client', 2, 1)
 ON CONFLICT (email) DO NOTHING;
 
--- Записи (в точности как на скриншоте pgAdmin в презентации Юшиной)
 INSERT INTO appointments (user_id, service_id, appointment_date, appointment_time, status, notes) VALUES
 (2, 1, '2024-01-15', '10:00:00', 'completed', 'Пациент жалуется на головную боль'),
 (2, 2, '2024-01-20', '14:30:00', 'scheduled', 'Плановый осмотр'),
@@ -120,7 +100,6 @@ INSERT INTO appointments (user_id, service_id, appointment_date, appointment_tim
 (2, 5, '2024-01-18', '09:30:00', 'completed', 'Ежегодная проверка')
 ON CONFLICT DO NOTHING;
 
--- Платежи к записям
 INSERT INTO payments (appointment_id, amount, method, status) VALUES
 (1, 1350, 'card', 'paid'),
 (2, 2025, 'card', 'paid'),

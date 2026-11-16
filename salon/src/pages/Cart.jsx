@@ -18,7 +18,6 @@ export default function Cart() {
 
   const couponPercent = Number(auth.user?.coupon_percent) || 0;
 
-  // Подсчёт итоговой суммы с учётом скидок
   const total = cart.reduce((sum, item) => {
     const withDisc = item.price * (1 - (item.discount_percent || 0) / 100);
     const withCoupon = Math.round(withDisc * (1 - couponPercent / 100));

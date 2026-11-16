@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pg from "pg";
-import DB from "./db.js"; // fallback SQLite на случай отсутствия подключения к Postgres
+import DB from "./db.js";
 
 dotenv.config();
 
@@ -12,7 +12,6 @@ const PORT = process.env.PORT || 3100;
 app.use(cors());
 app.use(express.json());
 
-// Подключение к PostgreSQL (по слайду 18 презентации Юшиной)
 const { Pool } = pg;
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
@@ -35,10 +34,8 @@ pool.connect((err, client, release) => {
   }
 });
 
-// Универсальная функция запроса к БД (PostgreSQL или SQLite)
 async function queryDB(sql, params = []) {
   if (usePostgres) {
-    // В PostgreSQL параметры $1, $2, а в SQLite ?
     let pgSql = sql;
     let i = 1;
     while (pgSql.includes("?")) {
@@ -57,7 +54,6 @@ async function queryDB(sql, params = []) {
   }
 }
 
-// ---------------- ТЕСТОВЫЕ ENDPOINTS (Слайды 19-21) ----------------
 
 app.get("/api/test", (req, res) => {
   res.json({ message: "API работает!", timestamp: new Date() });
@@ -81,7 +77,6 @@ app.get("/api/appointments/simple", async (req, res) => {
   }
 });
 
-// ---------------- КАТАЛОГ И КАТЕГОРИИ (Требования 1, 6) ----------------
 
 app.get("/api/categories", async (req, res) => {
   try {
@@ -118,7 +113,6 @@ app.get("/api/services", async (req, res) => {
   }
 });
 
-// Назначение скидки на услугу администратором (Требование 5)
 app.put("/api/services/:id/discount", async (req, res) => {
   const percent = Number(req.body.percent);
   const id = Number(req.params.id);
@@ -134,7 +128,6 @@ app.put("/api/services/:id/discount", async (req, res) => {
   }
 });
 
-// ---------------- АВТОРИЗАЦИЯ И ПОЛЬЗОВАТЕЛИ (Требования 3, 5) ----------------
 
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body || {};
@@ -174,7 +167,6 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
-// Администратор выдает персональный купон пользователю (Требование 5)
 app.put("/api/users/:id/coupon", async (req, res) => {
   const userId = Number(req.params.id);
   const couponId = req.body.coupon_id ? Number(req.body.coupon_id) : null;
@@ -196,7 +188,6 @@ app.get("/api/coupons", async (req, res) => {
   }
 });
 
-// ---------------- ЗАПИСИ И КОРЗИНА (Требования 2, 4 и слайд 21) ----------------
 
 app.get("/api/appointments", async (req, res) => {
   try {
@@ -256,7 +247,6 @@ app.post("/api/appointments", async (req, res) => {
   }
 });
 
-// Запуск сервера
 app.listen(PORT, () => {
   console.log(`Сервер запущен на http://localhost:${PORT}`);
 });

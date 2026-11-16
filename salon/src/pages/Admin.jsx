@@ -16,8 +16,6 @@ export default function Admin() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Формы
   const [newCat, setNewCat] = useState("");
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [serviceDiscount, setServiceDiscount] = useState("");
