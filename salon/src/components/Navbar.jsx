@@ -6,17 +6,22 @@ export default function Navbar() {
   const { auth, cart, logout, isDark, toggleTheme } = useShop();
 
   const cartCount = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+  const isAdmin = auth.user?.role === "admin";
 
   return (
     <nav className="navbar">
       <div className="nav-brand">✨ Салон красоты</div>
       <div className="nav-links">
         <NavLink to="/">Каталог</NavLink>
-        <NavLink to="/cart">
-          Корзина {cartCount > 0 && <span className="nav-badge">{cartCount}</span>}
-        </NavLink>
-        <NavLink to="/dashboard">Личный кабинет</NavLink>
-        {auth.user?.role === "admin" && (
+        {!isAdmin && (
+          <>
+            <NavLink to="/cart">
+              Корзина {cartCount > 0 && <span className="nav-badge">{cartCount}</span>}
+            </NavLink>
+            <NavLink to="/dashboard">Личный кабинет</NavLink>
+          </>
+        )}
+        {isAdmin && (
           <NavLink to="/admin" className="admin-link">👑 Админка</NavLink>
         )}
       </div>

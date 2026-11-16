@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import AppointmentsList from "../components/AppointmentsList";
@@ -6,6 +7,12 @@ import "./Dashboard.css";
 export default function Dashboard() {
   const { auth, logout } = useShop();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (auth.user?.role === "admin") {
+      navigate("/admin");
+    }
+  }, [auth, navigate]);
 
   if (!auth.token) {
     return (

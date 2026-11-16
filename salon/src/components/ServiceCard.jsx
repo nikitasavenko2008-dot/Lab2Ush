@@ -15,7 +15,8 @@ const fallbackImages = {
 };
 
 export default function ServiceCard({ service }) {
-  const { addToCart } = useShop();
+  const { addToCart, auth } = useShop();
+  const isAdmin = auth.user?.role === "admin";
 
   const hasDiscount = service.discount_percent > 0;
   const finalPrice = hasDiscount
@@ -50,9 +51,11 @@ export default function ServiceCard({ service }) {
           )}
         </div>
 
-        <button className="add-btn" onClick={() => addToCart(service)}>
-          В корзину
-        </button>
+        {!isAdmin && (
+          <button className="add-btn" onClick={() => addToCart(service)}>
+            В корзину
+          </button>
+        )}
       </div>
     </div>
   );

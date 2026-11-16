@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { apiPost } from "../api";
@@ -9,6 +9,12 @@ import "./Cart.css";
 export default function Cart() {
   const { cart, removeFromCart, clearCart, auth } = useShop();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (auth.user?.role === "admin") {
+      navigate("/admin");
+    }
+  }, [auth, navigate]);
 
   const [date, setDate] = useState("2024-02-01");
   const [time, setTime] = useState("14:00");
