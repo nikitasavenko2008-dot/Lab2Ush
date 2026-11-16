@@ -18,7 +18,6 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
-    // Требование 3: Проверка заполнения полей
     if (!email.trim()) {
       setError("Заполните поле email");
       return;

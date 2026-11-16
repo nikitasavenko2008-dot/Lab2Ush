@@ -79,19 +79,16 @@ function initDB() {
 }
 
 function seedDB() {
-  // 1. Roles
   const insertRole = DB.prepare("INSERT INTO roles (role_id, name) VALUES (?, ?)");
   insertRole.run(1, "admin");
   insertRole.run(2, "client");
 
-  // 2. Categories
   const insertCat = DB.prepare("INSERT INTO categories (name) VALUES (?)");
   const catNames = ["Маникюр", "Стрижка", "Окрашивание", "Укладка", "Массаж", "Косметология"];
   for (const c of catNames) {
     insertCat.run(c);
   }
 
-  // 3. Coupons
   const insertCoupon = DB.prepare("INSERT INTO coupons (code, percent) VALUES (?, ?)");
   insertCoupon.run("WELCOME10", 10);
   insertCoupon.run("VIP20", 20);
@@ -99,7 +96,6 @@ function seedDB() {
   insertCoupon.run("SPRING25", 25);
   insertCoupon.run("NEWYEAR30", 30);
 
-  // 4. Services (10 услуг, ровно 3 со скидкой = 30%)
   const services = [
     {
       name: "Классический маникюр",
@@ -115,7 +111,7 @@ function seedDB() {
       duration: 90,
       price: 2500,
       cat: "Маникюр",
-      disc: 10, // Скидка 1
+      disc: 10,
     },
     {
       name: "Детская стрижка",
@@ -131,7 +127,7 @@ function seedDB() {
       duration: 60,
       price: 2000,
       cat: "Стрижка",
-      disc: 15, // Скидка 2
+      disc: 15,
     },
     {
       name: "Окрашивание в один тон",
@@ -147,7 +143,7 @@ function seedDB() {
       duration: 180,
       price: 6000,
       cat: "Окрашивание",
-      disc: 20, // Скидка 3 (ровно 3 из 10 = 30%)
+      disc: 20,
     },
     {
       name: "Вечерняя укладка",
@@ -192,7 +188,6 @@ function seedDB() {
     insertSvc.run(s.name, s.desc, s.duration, s.price, s.cat, s.disc);
   }
 
-  // 5. Users
   const adminHash = hashPwd("admin");
   DB.prepare(
     "INSERT INTO users (name, email, password, role_id) VALUES (?, ?, ?, 1)"
@@ -208,7 +203,6 @@ function seedDB() {
     "INSERT INTO users (name, email, password, role_id, coupon_id) VALUES (?, ?, ?, 2, 2)"
   ).run("Анна Смирнова", "anna@mail.ru", client2Hash);
 
-  // 6. Appointments & Payments (точно в стиле презентации Юшиной)
   const initialAppointments = [
     {
       userId: 2,

@@ -1,5 +1,3 @@
-// Универсальный API-клиент
-
 export async function apiGet(url, token) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;

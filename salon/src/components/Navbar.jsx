@@ -30,7 +30,6 @@ export default function Navbar() {
           <NavLink to="/login" className="login-link">Войти</NavLink>
         )}
 
-        {/* Кнопка смены темы */}
         <button
           className="theme-toggle-btn"
           onClick={toggleTheme}

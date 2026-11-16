@@ -1,7 +1,6 @@
 import { useShop } from "../context/ShopContext";
 import "./ServiceCard.css";
 
-// Резервные картинки с Unsplash по ключевым словам, если нет в БД
 const fallbackImages = {
   1: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&auto=format&fit=crop&q=80",
   2: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=500&auto=format&fit=crop&q=80",

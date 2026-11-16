@@ -35,7 +35,6 @@ export default function Dashboard() {
       )}
 
       <h2>Мои записи (Appointments)</h2>
-      {/* Компонент записей по презентации Юшиной */}
       <AppointmentsList />
     </div>
   );

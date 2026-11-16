@@ -19,12 +19,10 @@ export default function AppointmentsList() {
     }
   }
 
-  // Хук useEffect выполняет загрузку данных при первом рендере (Слайд 29)
   useEffect(() => {
     loadAppointments();
   }, []);
 
-  // Функция для обработки обновления данных (Слайд 29)
   const handleRefresh = () => {
     loadAppointments();
   };
@@ -33,7 +31,6 @@ export default function AppointmentsList() {
     return <div style={{ padding: "20px", color: "#666" }}>Загрузка записей...</div>;
   }
 
-  // Условный рендеринг при ошибке (Слайд 30)
   if (error) {
     return (
       <div style={{ color: "red", padding: "20px" }}>
@@ -56,7 +53,6 @@ export default function AppointmentsList() {
     );
   }
 
-  // Рендеринг карточек записей (Слайд 31)
   return (
     <div style={{ display: "grid", gap: "15px", marginTop: "15px" }}>
       {appointments.map((a) => (

@@ -49,7 +49,6 @@ export default function Admin() {
     loadData();
   }, []);
 
-  // Требование 6: Администратор добавляет категорию
   async function handleAddCategory(e) {
     e.preventDefault();
     if (!newCat.trim()) return;
@@ -63,7 +62,6 @@ export default function Admin() {
     }
   }
 
-  // Требование 5: Администратор назначает общую скидку на услугу
   async function handleSetDiscount(e) {
     e.preventDefault();
     if (!selectedServiceId || serviceDiscount === "") return;
@@ -79,7 +77,6 @@ export default function Admin() {
     }
   }
 
-  // Требование 5: Администратор выдаёт персональный купон пользователю
   async function handleAssignCoupon(userId) {
     const couponId = userCouponMap[userId];
     try {
@@ -107,9 +104,8 @@ export default function Admin() {
 
       {!loading && (
         <div className="admin-blocks">
-          {/* Требование 6: Добавление категории */}
           <div className="admin-box">
-            <h2>1. Категории услуг (Требование 6)</h2>
+            <h2>Категории услуг</h2>
             <form onSubmit={handleAddCategory} className="simple-form">
               <input
                 type="text"
@@ -126,9 +122,8 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Требование 5: Общая скидка на товар */}
           <div className="admin-box">
-            <h2>2. Общая скидка на товар/услугу (Требование 5)</h2>
+            <h2>Общая скидка на услугу</h2>
             <form onSubmit={handleSetDiscount} className="simple-form">
               <select
                 value={selectedServiceId}
@@ -153,9 +148,8 @@ export default function Admin() {
             </form>
           </div>
 
-          {/* Требование 5: Персональный купон пользователю */}
           <div className="admin-box">
-            <h2>3. Персональные купоны пользователей (Требование 5)</h2>
+            <h2>Персональные купоны пользователей</h2>
             <table className="user-table">
               <thead>
                 <tr>

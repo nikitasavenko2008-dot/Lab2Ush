@@ -48,7 +48,6 @@ export default function Catalog() {
 
   return (
     <div className="catalog-page">
-      {/* Требование 6: Aside слева с чекбоксами */}
       <CategoryFilter
         categories={categories}
         selected={selectedCats}
@@ -63,7 +62,6 @@ export default function Catalog() {
           </div>
         </div>
 
-        {/* Требование 4: Сообщения о загрузке и ошибках */}
         {loading && <Loader text="Загрузка каталога с сервера API..." />}
         {error && <ErrorBox message={error} />}
 

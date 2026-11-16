@@ -1,4 +1,3 @@
-// Код API по слайдам 24-27 презентации Юшиной
 const API_URL = "/api/appointments";
 
 export async function getAppointments() {
