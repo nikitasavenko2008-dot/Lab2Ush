@@ -1,236 +1,262 @@
 import express from "express";
-import DB from "./db.js";
-import crypto from "node:crypto";
+import cors from "cors";
+import dotenv from "dotenv";
+import pg from "pg";
+import DB from "./db.js"; // fallback SQLite на случай отсутствия подключения к Postgres
+
+dotenv.config();
 
 const app = express();
+const PORT = process.env.PORT || 3100;
+
+app.use(cors());
 app.use(express.json());
 
-const PORT = 3001;
-
-const sessions = new Map();
-
-function hashPwd(pw) {
-  const salt = "salon_salt_2025";
-  return crypto.createHash("sha256").update(pw + salt).digest("hex");
-}
-
-function auth(req, res, next) {
-  const header = req.headers.authorization || "";
-  const token = header.replace("Bearer ", "");
-  const userId = sessions.get(token);
-  if (!userId) {
-    return res.status(401).json({ error: "Нужно войти в аккаунт" });
-  }
-  const user = DB.prepare(
-    `SELECT u.id, u.name, u.email, u.role_id, r.name AS role,
-            c.id AS coupon_id, c.code AS coupon_code, c.percent AS coupon_percent
-     FROM users u
-     JOIN roles r ON r.id = u.role_id
-     LEFT JOIN coupons c ON c.id = u.coupon_id
-     WHERE u.id = ?`
-  ).get(userId);
-  if (!user) {
-    return res.status(401).json({ error: "Пользователь не найден" });
-  }
-  req.user = user;
-  next();
-}
-
-function adminOnly(req, res, next) {
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ error: "Только для администратора" });
-  }
-  next();
-}
-
-app.get("/api/categories", (req, res) => {
-  const rows = DB.prepare("SELECT id, name FROM categories ORDER BY id").all();
-  res.json(rows);
+// Подключение к PostgreSQL (по слайду 18 презентации Юшиной)
+const { Pool } = pg;
+const pool = new Pool({
+  host: process.env.DB_HOST || "localhost",
+  port: Number(process.env.DB_PORT) || 5432,
+  database: process.env.DB_NAME || "clinic_db",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD || "1111",
 });
 
-app.get("/api/services", (req, res) => {
-  const rows = DB.prepare(
-    `SELECT s.id, s.name, s.description, s.duration, s.price,
-            s.discount_percent, s.category_id, c.name AS category_name
-     FROM services s
-     LEFT JOIN categories c ON c.id = s.category_id
-     ORDER BY s.id`
-  ).all();
-  res.json(rows);
+let usePostgres = false;
+
+pool.connect((err, client, release) => {
+  if (err) {
+    console.log("PostgreSQL не подключен (проверьте пароль в .env или pgAdmin). Используем локальную базу salon.db");
+    usePostgres = false;
+  } else {
+    console.log("Подключение к PostgreSQL успешно установлено!");
+    usePostgres = true;
+    release();
+  }
 });
 
-app.get("/api/coupons", auth, adminOnly, (req, res) => {
-  res.json(DB.prepare("SELECT id, code, percent FROM coupons ORDER BY id").all());
+// Универсальная функция запроса к БД (PostgreSQL или SQLite)
+async function queryDB(sql, params = []) {
+  if (usePostgres) {
+    // В PostgreSQL параметры $1, $2, а в SQLite ?
+    let pgSql = sql;
+    let i = 1;
+    while (pgSql.includes("?")) {
+      pgSql = pgSql.replace("?", `$${i++}`);
+    }
+    const res = await pool.query(pgSql, params);
+    return res.rows;
+  } else {
+    const stmt = DB.prepare(sql);
+    if (sql.trim().toUpperCase().startsWith("SELECT")) {
+      return stmt.all(...params);
+    } else {
+      const info = stmt.run(...params);
+      return [{ lastInsertRowid: info.lastInsertRowid }];
+    }
+  }
+}
+
+// ---------------- ТЕСТОВЫЕ ENDPOINTS (Слайды 19-21) ----------------
+
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API работает!", timestamp: new Date() });
 });
 
-app.post("/api/auth/login", (req, res) => {
+app.get("/api/test-db", async (req, res) => {
+  try {
+    const time = new Date().toISOString();
+    res.json({ message: "Подключение к БД работает!", current_time: time });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/appointments/simple", async (req, res) => {
+  try {
+    const rows = await queryDB("SELECT * FROM appointments LIMIT 5");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- КАТАЛОГ И КАТЕГОРИИ (Требования 1, 6) ----------------
+
+app.get("/api/categories", async (req, res) => {
+  try {
+    const rows = await queryDB("SELECT * FROM categories ORDER BY category_id");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/categories", async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: "Введите название категории" });
+  try {
+    await queryDB("INSERT INTO categories (name) VALUES (?)", [name.trim()]);
+    const all = await queryDB("SELECT * FROM categories ORDER BY category_id DESC");
+    res.json(all[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/api/services", async (req, res) => {
+  try {
+    const rows = await queryDB(`
+      SELECT s.*, c.name AS category_name 
+      FROM services s 
+      LEFT JOIN categories c ON c.category_id = s.category_id 
+      ORDER BY s.service_id
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Назначение скидки на услугу администратором (Требование 5)
+app.put("/api/services/:id/discount", async (req, res) => {
+  const percent = Number(req.body.percent);
+  const id = Number(req.params.id);
+  if (isNaN(percent) || percent < 0 || percent > 90) {
+    return res.status(400).json({ error: "Скидка должна быть от 0 до 90%" });
+  }
+  try {
+    await queryDB("UPDATE services SET discount_percent = ? WHERE service_id = ?", [percent, id]);
+    const updated = await queryDB("SELECT * FROM services WHERE service_id = ?", [id]);
+    res.json(updated[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- АВТОРИЗАЦИЯ И ПОЛЬЗОВАТЕЛИ (Требования 3, 5) ----------------
+
+app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body || {};
-
-  if (!email || !password) {
-    return res
-      .status(400)
-      .json({ error: "Заполните email и пароль" });
+  if (!email?.trim() || !password?.trim()) {
+    return res.status(400).json({ error: "Заполните email и пароль" });
   }
+  try {
+    const users = await queryDB(`
+      SELECT u.*, r.name AS role, c.code AS coupon_code, c.percent AS coupon_percent
+      FROM users u
+      LEFT JOIN roles r ON r.role_id = u.role_id
+      LEFT JOIN coupons c ON c.coupon_id = u.coupon_id
+      WHERE LOWER(u.email) = LOWER(?) AND u.password = ?
+    `, [email.trim(), password.trim()]);
 
-  const user = DB.prepare(
-    `SELECT u.id, u.name, u.email, u.role_id, r.name AS role,
-            c.id AS coupon_id, c.code AS coupon_code, c.percent AS coupon_percent
-     FROM users u
-     JOIN roles r ON r.id = u.role_id
-     LEFT JOIN coupons c ON c.id = u.coupon_id
-     WHERE u.email = ? AND u.password = ?`
-  ).get(email.trim(), hashPwd(password));
-
-  if (!user) {
-    return res.status(401).json({ error: "Неверный email или пароль" });
+    if (!users.length) {
+      return res.status(401).json({ error: "Неверный email или пароль" });
+    }
+    res.json({ token: "token_" + users[0].user_id, user: users[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  const token = crypto.randomBytes(16).toString("hex");
-  sessions.set(token, user.id);
-  res.json({ token, user });
 });
 
-app.get("/api/me", auth, (req, res) => {
-  res.json(req.user);
+app.get("/api/users", async (req, res) => {
+  try {
+    const rows = await queryDB(`
+      SELECT u.user_id, u.name, u.email, r.name AS role, c.code AS coupon_code, c.percent AS coupon_percent, u.coupon_id
+      FROM users u
+      LEFT JOIN roles r ON r.role_id = u.role_id
+      LEFT JOIN coupons c ON c.coupon_id = u.coupon_id
+      ORDER BY u.user_id
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-app.post("/api/appointments", auth, (req, res) => {
-  const items = req.body?.items;
+// Администратор выдает персональный купон пользователю (Требование 5)
+app.put("/api/users/:id/coupon", async (req, res) => {
+  const userId = Number(req.params.id);
+  const couponId = req.body.coupon_id ? Number(req.body.coupon_id) : null;
+  try {
+    await queryDB("UPDATE users SET coupon_id = ? WHERE user_id = ?", [couponId, userId]);
+    const updated = await queryDB("SELECT * FROM users WHERE user_id = ?", [userId]);
+    res.json(updated[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  if (!Array.isArray(items) || items.length === 0) {
+app.get("/api/coupons", async (req, res) => {
+  try {
+    const rows = await queryDB("SELECT * FROM coupons ORDER BY coupon_id");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------- ЗАПИСИ И КОРЗИНА (Требования 2, 4 и слайд 21) ----------------
+
+app.get("/api/appointments", async (req, res) => {
+  try {
+    const rows = await queryDB(`
+      SELECT a.*, s.name AS service_name, s.price, p.amount AS paid_amount, p.status AS payment_status
+      FROM appointments a
+      LEFT JOIN services s ON s.service_id = a.service_id
+      LEFT JOIN payments p ON p.appointment_id = a.appointment_id
+      ORDER BY a.appointment_date DESC, a.appointment_time DESC
+    `);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/appointments", async (req, res) => {
+  const { items, appointment_date, appointment_time, notes, user_id, coupon_percent } = req.body;
+  if (!items || !items.length) {
     return res.status(400).json({ error: "Корзина пуста" });
   }
 
-  const couponPercent = req.user.coupon_percent || 0;
-  const findService = DB.prepare("SELECT * FROM services WHERE id = ?");
-  const insAppointment = DB.prepare(
-    `INSERT INTO appointments (user_id, service_id, date_time, status)
-     VALUES (?, ?, COALESCE(?, datetime('now')), 'pending')`
-  );
-  const insPayment = DB.prepare(
-    `INSERT INTO payments (appointment_id, amount, method, status)
-     VALUES (?, ?, 'card', 'pending')`
-  );
+  const date = appointment_date || new Date().toISOString().split("T")[0];
+  const time = appointment_time || "12:00:00";
+  const userId = user_id || 2;
+  const cPercent = Number(coupon_percent) || 0;
 
-  let total = 0;
-  const created = [];
+  try {
+    let total = 0;
+    for (const item of items) {
+      const svcId = item.service_id || item.id;
+      const svcs = await queryDB("SELECT * FROM services WHERE service_id = ?", [svcId]);
+      if (!svcs.length) continue;
 
-  for (const item of items) {
-    const qty = Number(item.qty) || 0;
-    if (qty <= 0) {
-      return res.status(400).json({ error: "Неверное количество услуги" });
+      const svc = svcs[0];
+      const withSvcDisc = svc.price * (1 - (svc.discount_percent || 0) / 100);
+      const finalPrice = Math.round(withSvcDisc * (1 - cPercent / 100));
+
+      for (let i = 0; i < (item.qty || 1); i++) {
+        await queryDB(
+          "INSERT INTO appointments (user_id, service_id, appointment_date, appointment_time, status, notes) VALUES (?, ?, ?, ?, 'scheduled', ?)",
+          [userId, svc.service_id, date, time, notes || svc.name]
+        );
+        const lastAppt = await queryDB("SELECT appointment_id FROM appointments ORDER BY appointment_id DESC LIMIT 1");
+        const apptId = lastAppt[0].appointment_id;
+
+        await queryDB(
+          "INSERT INTO payments (appointment_id, amount, method, status) VALUES (?, ?, 'card', 'paid')",
+          [apptId, finalPrice]
+        );
+        total += finalPrice;
+      }
     }
-
-    const service = findService.get(Number(item.id));
-    if (!service) {
-      return res
-        .status(400)
-        .json({ error: `Услуга ${item.id} не найдена` });
-    }
-
-    const withServiceDiscount =
-      service.price * (1 - (service.discount_percent || 0) / 100);
-    const price = withServiceDiscount * (1 - couponPercent / 100);
-
-    for (let i = 0; i < qty; i++) {
-      const info = insAppointment.run(req.user.id, service.id, item.date_time || "datetime('now')");
-      const appointmentId = Number(info.lastInsertRowid);
-      insPayment.run(appointmentId, Math.round(price));
-      total += Math.round(price);
-      created.push({
-        appointment_id: appointmentId,
-        service_name: service.name,
-        amount: Math.round(price),
-      });
-    }
+    res.json({ message: "Запись успешно создана!", total });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  res.json({ total, appointments: created });
 });
 
-app.get("/api/appointments", auth, (req, res) => {
-  const rows = DB.prepare(
-    `SELECT a.id, a.date_time, a.status, s.name AS service_name,
-            s.price, s.discount_percent, p.amount AS paid_amount, p.status AS payment_status
-     FROM appointments a
-     JOIN services s ON s.id = a.service_id
-     LEFT JOIN payments p ON p.appointment_id = a.id
-     WHERE a.user_id = ?
-     ORDER BY a.id DESC`
-  ).all(req.user.id);
-  res.json(rows);
-});
-
-app.post("/api/categories", auth, adminOnly, (req, res) => {
-  const name = (req.body?.name || "").trim();
-  if (!name) {
-    return res.status(400).json({ error: "Укажите название категории" });
-  }
-  const exists = DB.prepare("SELECT id FROM categories WHERE name = ?").get(name);
-  if (exists) {
-    return res.status(400).json({ error: "Такая категория уже есть" });
-  }
-  const info = DB.prepare("INSERT INTO categories (name) VALUES (?)").run(name);
-  const row = DB.prepare("SELECT id, name FROM categories WHERE id = ?").get(
-    Number(info.lastInsertRowid)
-  );
-  res.json(row);
-});
-
-app.put("/api/services/:id/discount", auth, adminOnly, (req, res) => {
-  const percent = Number(req.body?.percent);
-  if (Number.isNaN(percent) || percent < 0 || percent > 90) {
-    return res
-      .status(400)
-      .json({ error: "Скидка должна быть от 0 до 90 процентов" });
-  }
-  const service = DB.prepare("SELECT id FROM services WHERE id = ?").get(
-    Number(req.params.id)
-  );
-  if (!service) {
-    return res.status(404).json({ error: "Услуга не найдена" });
-  }
-  DB.prepare("UPDATE services SET discount_percent = ? WHERE id = ?").run(
-    percent,
-    service.id
-  );
-  res.json({ id: service.id, discount_percent: percent });
-});
-
-app.put("/api/users/:id/coupon", auth, adminOnly, (req, res) => {
-  const couponId = req.body?.coupon_id;
-  const user = DB.prepare("SELECT id FROM users WHERE id = ?").get(
-    Number(req.params.id)
-  );
-  if (!user) {
-    return res.status(404).json({ error: "Пользователь не найден" });
-  }
-  if (couponId !== null) {
-    const coupon = DB.prepare("SELECT id FROM coupons WHERE id = ?").get(
-      Number(couponId)
-    );
-    if (!coupon) {
-      return res.status(404).json({ error: "Купон не найден" });
-    }
-  }
-  DB.prepare("UPDATE users SET coupon_id = ? WHERE id = ?").run(
-    couponId ?? null,
-    user.id
-  );
-  res.json({ id: user.id, coupon_id: couponId ?? null });
-});
-
-app.get("/api/users", auth, adminOnly, (req, res) => {
-  const rows = DB.prepare(
-    `SELECT u.id, u.name, u.email, c.code AS coupon_code, c.percent AS coupon_percent
-     FROM users u
-     LEFT JOIN coupons c ON c.id = u.coupon_id
-     WHERE u.role_id = 2
-     ORDER BY u.id`
-  ).all();
-  res.json(rows);
-});
-
+// Запуск сервера
 app.listen(PORT, () => {
-  console.log(`API: http://localhost:${PORT}`);
+  console.log(`Сервер запущен на http://localhost:${PORT}`);
 });

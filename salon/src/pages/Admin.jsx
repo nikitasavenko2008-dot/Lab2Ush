@@ -9,6 +9,7 @@ import "./Admin.css";
 export default function Admin() {
   const { auth, logout } = useShop();
   const navigate = useNavigate();
+
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState([]);
   const [users, setUsers] = useState([]);
@@ -16,110 +17,129 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const [newCatName, setNewCatName] = useState("");
-  const [discSvcId, setDiscSvcId] = useState("");
-  const [discVal, setDiscVal] = useState("");
-  const [userCouponId, setUserCouponId] = useState("");
+  // Формы
+  const [newCat, setNewCat] = useState("");
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+  const [serviceDiscount, setServiceDiscount] = useState("");
+  const [userCouponMap, setUserCouponMap] = useState({});
 
-  useEffect(() => {
+  async function loadData() {
     if (!auth.token || auth.user?.role !== "admin") {
       navigate("/login");
       return;
     }
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [cats, svcs, usrs, cpns] = await Promise.all([
-          apiGet("/api/categories", auth.token),
-          apiGet("/api/services", auth.token),
-          apiGet("/api/users", auth.token),
-          apiGet("/api/coupons", auth.token),
-        ]);
-        setCategories(cats);
-        setServices(svcs);
-        setUsers(usrs);
-        setCoupons(cpns);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [auth.token]);
-
-  async function addCategory() {
-    if (!newCatName.trim()) return;
+    setLoading(true);
     try {
-      const cat = await apiPost("/api/categories", { name: newCatName }, auth.token);
-      setCategories((prev) => [...prev, cat]);
-      setNewCatName("");
+      const [c, s, u, cpn] = await Promise.all([
+        apiGet("/api/categories"),
+        apiGet("/api/services"),
+        apiGet("/api/users"),
+        apiGet("/api/coupons"),
+      ]);
+      setCategories(c);
+      setServices(s);
+      setUsers(u);
+      setCoupons(cpn);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Ошибка загрузки админки");
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function setServiceDiscount() {
-    if (!discSvcId || !discVal) return;
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Требование 6: Администратор добавляет категорию
+  async function handleAddCategory(e) {
+    e.preventDefault();
+    if (!newCat.trim()) return;
     try {
-      await apiPut(`/api/services/${discSvcId}/discount`, { percent: +discVal }, auth.token);
-      setDiscVal("");
+      const added = await apiPost("/api/categories", { name: newCat.trim() });
+      setCategories([...categories, added]);
+      setNewCat("");
+      alert("Категория добавлена! Она сразу появится в aside каталога.");
     } catch (err) {
-      setError(err.message);
+      alert(err.message);
     }
   }
 
-  async function assignCoupon(userId) {
-    if (!userCouponId) return;
+  // Требование 5: Администратор назначает общую скидку на услугу
+  async function handleSetDiscount(e) {
+    e.preventDefault();
+    if (!selectedServiceId || serviceDiscount === "") return;
     try {
-      await apiPut(`/api/users/${userId}/coupon`, { coupon_id: +userCouponId }, auth.token);
+      const updated = await apiPut(`/api/services/${selectedServiceId}/discount`, {
+        percent: Number(serviceDiscount),
+      });
+      setServices(services.map((s) => (s.service_id === updated.service_id ? updated : s)));
+      setServiceDiscount("");
+      alert(`Скидка на услугу «${updated.name}» установлена: ${updated.discount_percent}%`);
     } catch (err) {
-      setError(err.message);
+      alert(err.message);
+    }
+  }
+
+  // Требование 5: Администратор выдаёт персональный купон пользователю
+  async function handleAssignCoupon(userId) {
+    const couponId = userCouponMap[userId];
+    try {
+      const updatedUser = await apiPut(`/api/users/${userId}/coupon`, {
+        coupon_id: couponId ? Number(couponId) : null,
+      });
+      setUsers(users.map((u) => (u.user_id === userId ? updatedUser : u)));
+      alert(`Купон пользователю «${updatedUser.name}» успешно назначен!`);
+    } catch (err) {
+      alert(err.message);
     }
   }
 
   return (
-    <div className="admin">
+    <div className="admin-page">
       <div className="admin-header">
-        <h1>Администратор</h1>
+        <h1>Панель администратора</h1>
         <button className="logout-btn" onClick={() => { logout(); navigate("/"); }}>
           Выйти
         </button>
       </div>
 
-      {loading && <Loader />}
+      {loading && <Loader text="Загрузка данных админки..." />}
       {error && <ErrorBox message={error} />}
 
       {!loading && (
-        <>
-          <section className="admin-section">
-            <h2>Категории</h2>
-            <div className="admin-input-row">
+        <div className="admin-blocks">
+          {/* Требование 6: Добавление категории */}
+          <div className="admin-box">
+            <h2>1. Категории услуг (Требование 6)</h2>
+            <form onSubmit={handleAddCategory} className="simple-form">
               <input
-                value={newCatName}
-                onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="Название новой категории"
+                type="text"
+                placeholder="Новая категория..."
+                value={newCat}
+                onChange={(e) => setNewCat(e.target.value)}
               />
-              <button onClick={addCategory}>Добавить</button>
-            </div>
-            <div className="tag-list">
+              <button type="submit">Добавить категорию</button>
+            </form>
+            <div className="cat-tags">
               {categories.map((c) => (
-                <span key={c.id} className="tag">
-                  {c.name}
-                </span>
+                <span key={c.category_id} className="cat-tag">{c.name}</span>
               ))}
             </div>
-          </section>
+          </div>
 
-          <section className="admin-section">
-            <h2>Общая скидка на услугу</h2>
-            <div className="admin-input-row">
-              <select value={discSvcId} onChange={(e) => setDiscSvcId(e.target.value)}>
+          {/* Требование 5: Общая скидка на товар */}
+          <div className="admin-box">
+            <h2>2. Общая скидка на товар/услугу (Требование 5)</h2>
+            <form onSubmit={handleSetDiscount} className="simple-form">
+              <select
+                value={selectedServiceId}
+                onChange={(e) => setSelectedServiceId(e.target.value)}
+              >
                 <option value="">— Выберите услугу —</option>
                 {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.discount_percent > 0 ? `скидка ${s.discount_percent}%` : "нет скидки"})
+                  <option key={s.service_id} value={s.service_id}>
+                    {s.name} (сейчас: {s.discount_percent}% скидка)
                   </option>
                 ))}
               </select>
@@ -127,40 +147,59 @@ export default function Admin() {
                 type="number"
                 min="0"
                 max="90"
-                value={discVal}
-                onChange={(e) => setDiscVal(e.target.value)}
-                placeholder="%"
+                placeholder="Скидка %"
+                value={serviceDiscount}
+                onChange={(e) => setServiceDiscount(e.target.value)}
               />
-              <button onClick={setServiceDiscount}>Применить</button>
-            </div>
-          </section>
+              <button type="submit">Применить скидку</button>
+            </form>
+          </div>
 
-          <section className="admin-section">
-            <h2>Персональные скидки (купон)</h2>
-            <div className="admin-input-row">
-              <select value={userCouponId} onChange={(e) => setUserCouponId(e.target.value)}>
-                <option value="">— Купон —</option>
-                {coupons.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} ({c.percent}%)
-                  </option>
+          {/* Требование 5: Персональный купон пользователю */}
+          <div className="admin-box">
+            <h2>3. Персональные купоны пользователей (Требование 5)</h2>
+            <table className="user-table">
+              <thead>
+                <tr>
+                  <th>Пользователь</th>
+                  <th>Email</th>
+                  <th>Текущий купон</th>
+                  <th>Выбрать купон</th>
+                  <th>Действие</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.user_id}>
+                    <td><b>{u.name}</b></td>
+                    <td>{u.email}</td>
+                    <td>{u.coupon_code ? `${u.coupon_code} (-${u.coupon_percent}%)` : "нет"}</td>
+                    <td>
+                      <select
+                        value={userCouponMap[u.user_id] ?? (u.coupon_id || "")}
+                        onChange={(e) =>
+                          setUserCouponMap({ ...userCouponMap, [u.user_id]: e.target.value })
+                        }
+                      >
+                        <option value="">Без купона</option>
+                        {coupons.map((cpn) => (
+                          <option key={cpn.coupon_id} value={cpn.coupon_id}>
+                            {cpn.code} ({cpn.percent}%)
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
+                      <button onClick={() => handleAssignCoupon(u.user_id)}>
+                        Назначить
+                      </button>
+                    </td>
+                  </tr>
                 ))}
-              </select>
-            </div>
-            <div className="admin-input-row">
-              <span>Назначить купон пользователю:</span>
-              {users.map((u) => (
-                <button
-                  key={u.id}
-                  className="assign-btn"
-                  onClick={() => assignCoupon(u.id)}
-                >
-                  {u.name} — сейчас: {u.coupon_code || "нет"}
-                </button>
-              ))}
-            </div>
-          </section>
-        </>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );

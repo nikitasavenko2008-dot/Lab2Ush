@@ -1,17 +1,155 @@
-html, body {
+* {
+  box-sizing: border-box;
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  background: #f5f5f5;
-  color: #222;
-  transition: background 0.3s, color 0.3s;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  color: #333;
+  line-height: 1.5;
+  transition: background 0.2s, color 0.2s;
 }
 
 body.dark {
-  background: #1a1a2e;
-  color: #e0e0e0;
+  background: #181924;
+  color: #e2e8f0;
+}
+
+body.dark .navbar,
+body.dark .aside-filter,
+body.dark .service-card,
+body.dark .cart-item,
+body.dark .cart-order-box,
+body.dark .login-card,
+body.dark .admin-box,
+body.dark .user-table th,
+body.dark .user-table td {
+  background: #232533 !important;
+  color: #e2e8f0 !important;
+  border-color: #383a4c !important;
+}
+
+body.dark input,
+body.dark select {
+  background: #181924 !important;
+  color: #e2e8f0 !important;
+  border-color: #4a4d66 !important;
+}
+
+body.dark .card-desc,
+body.dark .card-duration,
+body.dark .item-detail,
+body.dark .login-hints {
+  color: #94a3b8 !important;
+}
+
+body.dark .regular-price,
+body.dark .item-sum {
+  color: #f8fafc !important;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+.main-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Navbar */
+.navbar {
+  background: #ffffff;
+  border-bottom: 1px solid #ddd;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-brand {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2563eb;
+}
+
+body.dark .nav-brand {
+  color: #60a5fa;
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.nav-links a {
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+.nav-links a.active {
+  background: #e0e7ff;
+  color: #1d4ed8;
+  font-weight: bold;
+}
+
+body.dark .nav-links a.active {
+  background: #312e81;
+  color: #a5b4fc;
+}
+
+.nav-badge {
+  background: #ef4444;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.admin-link {
+  color: #b45309;
+}
+
+.nav-user {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.logout-btn {
+  background: none;
+  border: 1px solid #ccc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.login-link {
+  background: #2563eb;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 4px;
+}
+
+.theme-toggle-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.1);
 }

@@ -1,90 +1,42 @@
-import { useEffect, useState } from "react";
-import { useShop } from "../context/ShopContext";
-import { apiGet } from "../api";
-import Loader from "../components/Loader";
-import ErrorBox from "../components/ErrorBox";
 import { useNavigate } from "react-router-dom";
+import { useShop } from "../context/ShopContext";
+import AppointmentsList from "../components/AppointmentsList";
 import "./Dashboard.css";
 
 export default function Dashboard() {
   const { auth, logout } = useShop();
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!auth.token) {
-      navigate("/login");
-      return;
-    }
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await apiGet("/api/appointments", auth.token);
-        setAppointments(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [auth.token]);
+  if (!auth.token) {
+    return (
+      <div className="dash-empty">
+        <p>Нужно войти в систему</p>
+        <button onClick={() => navigate("/login")}>Войти</button>
+      </div>
+    );
+  }
 
   return (
-    <div className="dashboard">
+    <div className="dash-page">
       <div className="dash-header">
         <h1>Личный кабинет</h1>
         <div className="dash-user">
-          <span>👤 {auth.user?.name} ({auth.user?.email})</span>
-          <button className="logout-btn" onClick={() => {
-            logout();
-            navigate("/");
-          }}>
+          👤 <b>{auth.user.name}</b> ({auth.user.email}) — {auth.user.role === "admin" ? "Администратор" : "Клиент"}
+          <button className="logout-btn" onClick={() => { logout(); navigate("/"); }}>
             Выйти
           </button>
         </div>
       </div>
 
-      {auth.user?.coupon_code && (
-        <div className="coupon-card">
-          🎟 Ваш купон: <strong>{auth.user.coupon_code}</strong> —{" "}
-          скидка {auth.user.coupon_percent}%
+      {auth.user.coupon_code && (
+        <div className="dash-coupon">
+          🎟 Ваш персональный купон: <b>{auth.user.coupon_code}</b> (скидка {auth.user.coupon_percent}%)
         </div>
       )}
 
-      <h2>Мои записи</h2>
-
-      {loading && <Loader />}
-      {error && <ErrorBox message={error} />}
-
-      {!loading && !error && appointments.length === 0 && (
-        <p>У вас пока нет записей</p>
-      )}
-
-      {!loading && !error && appointments.length > 0 && (
-        <div className="appt-list">
-          {appointments.map((a) => (
-            <div key={a.id} className="appt-row">
-              <span className="appt-service">{a.service_name}</span>
-              <span className="appt-date">{a.date_time}</span>
-              <span className="appt-price">
-                {a.paid_amount} ₽
-                {a.discount_percent > 0 && (
-                  <span className="appt-disc">
-                    {" "}(скидка {a.discount_percent}%)
-                  </span>
-                )}
-              </span>
-              <span className={`appt-status ${a.status}`}>
-                {a.status === "pending" ? "ожидает" : a.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      <h2>Мои записи (Appointments)</h2>
+      {/* Компонент записей по презентации Юшиной */}
+      <AppointmentsList />
     </div>
   );
 }

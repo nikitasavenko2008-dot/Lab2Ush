@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { apiPost } from "../api";
 import { useShop } from "../context/ShopContext";
 import ErrorBox from "../components/ErrorBox";
-import Loader from "../components/Loader";
 import "./Login.css";
 
 export default function Login() {
@@ -11,6 +10,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
   const { login } = useShop();
   const navigate = useNavigate();
 
@@ -18,12 +18,17 @@ export default function Login() {
     e.preventDefault();
     setError("");
 
+    // Требование 3: Проверка заполнения полей
     if (!email.trim()) {
-      setError("Введите email");
+      setError("Заполните поле email");
+      return;
+    }
+    if (!email.includes("@")) {
+      setError("Некорректный email адрес");
       return;
     }
     if (!password.trim()) {
-      setError("Введите пароль");
+      setError("Заполните поле пароль");
       return;
     }
 
@@ -31,9 +36,13 @@ export default function Login() {
     try {
       const data = await apiPost("/api/auth/login", { email, password });
       login(data.token, data.user);
-      navigate("/dashboard");
+      if (data.user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Неверный email или пароль");
     } finally {
       setLoading(false);
     }
@@ -42,33 +51,35 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1>Вход</h1>
+        <h1>Вход в систему</h1>
         <form onSubmit={handleSubmit}>
-          <label>Email</label>
+          <label>Email:</label>
           <input
             type="email"
             value={email}
+            placeholder="admin@salon.ru или ivan@mail.ru"
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@example.com"
           />
-          <label>Пароль</label>
+
+          <label>Пароль:</label>
           <input
             type="password"
             value={password}
+            placeholder="admin или client"
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Ваш пароль"
           />
+
           {error && <ErrorBox message={error} />}
+
           <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? "Вхожу..." : "Войти"}
+            {loading ? "Вход..." : "Войти"}
           </button>
         </form>
-        <p className="hint">
-          admin@salon.ru / admin — администратор
-        </p>
-        <p className="hint">
-          ivan@mail.ru / client — клиент
-        </p>
+
+        <div className="login-hints">
+          <p>👑 <b>admin@salon.ru</b> / пароль: <b>admin</b> (Администратор)</p>
+          <p>👤 <b>ivan@mail.ru</b> / пароль: <b>client</b> (Клиент, купон 10%)</p>
+        </div>
       </div>
     </div>
   );

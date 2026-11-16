@@ -1,5 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-import { useShop } from "./context/ShopContext";
 import Navbar from "./components/Navbar";
 import Catalog from "./pages/Catalog";
 import Cart from "./pages/Cart";
@@ -7,11 +6,9 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 
-function App() {
-  const { isDark } = useShop();
-
+export default function App() {
   return (
-    <div className={isDark ? "dark" : ""}>
+    <div className="app">
       <Navbar />
       <main className="main-content">
         <Routes>
@@ -25,5 +22,3 @@ function App() {
     </div>
   );
 }
-
-export default App;

@@ -1,6 +1,5 @@
-.dashboard {
-  padding: 24px;
-  max-width: 900px;
+.dash-page {
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -8,103 +7,22 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .dash-user {
   display: flex;
-  align-items: center;
   gap: 12px;
-  font-size: 14px;
-}
-
-.logout-btn {
-  padding: 6px 14px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: none;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.logout-btn:hover {
-  background: #f5f5f5;
-}
-
-.dark .logout-btn:hover {
-  background: #16213e;
-}
-
-.coupon-card {
-  background: #fff3e0;
-  border: 1px solid #ffcc02;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.dark .coupon-card {
-  background: #3e2c1a;
-  border-color: #8a6914;
-}
-
-.appt-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.appt-row {
-  display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
   font-size: 14px;
 }
 
-.dark .appt-row {
-  background: #16213e;
-  border-color: #2e303a;
-}
-
-.appt-service {
-  flex: 1;
-  font-weight: 600;
-}
-
-.appt-date {
-  color: #888;
-  min-width: 140px;
-}
-
-.appt-price {
-  font-weight: 700;
-  min-width: 100px;
-  text-align: right;
-}
-
-.appt-disc {
-  font-weight: 400;
-  font-size: 12px;
-  color: #f44336;
-}
-
-.appt-status {
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-}
-
-.appt-status.pending {
-  background: #fff3e0;
-  color: #e65100;
-}
-
-.appt-status.confirmed {
-  background: #e8f5e9;
-  color: #2e7d32;
+.dash-coupon {
+  background: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #fbcfe8;
+  padding: 12px 16px;
+  border-radius: 6px;
+  font-size: 15px;
+  margin-bottom: 20px;
 }

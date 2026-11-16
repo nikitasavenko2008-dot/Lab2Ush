@@ -1,53 +1,37 @@
-import { createContext, useContext, useState, useReducer, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const ShopContext = createContext();
 
-function cartReducer(state, action) {
-  switch (action.type) {
-    case "ADD": {
-      const exists = state.find((i) => i.id === action.payload.id);
-      if (exists) {
-        return state.map((i) =>
-          i.id === action.payload.id ? { ...i, qty: i.qty + 1 } : i
-        );
-      }
-      return [...state, { ...action.payload, qty: 1 }];
-    }
-    case "REMOVE":
-      return state.filter((i) => i.id !== action.payload);
-    case "CLEAR":
-      return [];
-    default:
-      return state;
-  }
-}
-
-function getSavedTheme() {
-  try {
-    return localStorage.getItem("theme") === "dark";
-  } catch {
-    return false;
-  }
-}
-
-function getSavedAuth() {
-  try {
-    const raw = localStorage.getItem("auth");
-    if (!raw) return { token: null, user: null };
-    return JSON.parse(raw);
-  } catch {
-    return { token: null, user: null };
-  }
-}
-
 export function ShopProvider({ children }) {
-  const [cart, dispatch] = useReducer(cartReducer, []);
-  const [isDark, setIsDark] = useState(getSavedTheme);
-  const [auth, setAuth] = useState(getSavedAuth);
+  const [cart, setCart] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cart");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [auth, setAuth] = useState(() => {
+    try {
+      const saved = localStorage.getItem("auth");
+      return saved ? JSON.parse(saved) : { token: null, user: null };
+    } catch {
+      return { token: null, user: null };
+    }
+  });
+
+  const [isDark, setIsDark] = useState(() => {
+    try {
+      return localStorage.getItem("theme") === "dark";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  }, [isDark]);
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
   useEffect(() => {
     if (auth.token) {
@@ -57,13 +41,31 @@ export function ShopProvider({ children }) {
     }
   }, [auth]);
 
-  const addToCart = (service) =>
-    dispatch({ type: "ADD", payload: service });
-  const removeFromCart = (id) =>
-    dispatch({ type: "REMOVE", payload: id });
-  const clearCart = () => dispatch({ type: "CLEAR" });
+  useEffect(() => {
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    if (isDark) {
+      document.body.classList.add("dark");
+    } else {
+      document.body.classList.remove("dark");
+    }
+  }, [isDark]);
 
-  const toggleTheme = () => setIsDark((d) => !d);
+  const toggleTheme = () => setIsDark((prev) => !prev);
+
+  const addToCart = (service) => {
+    const exists = cart.find((i) => i.service_id === service.service_id);
+    if (exists) {
+      setCart(cart.map((i) => i.service_id === service.service_id ? { ...i, qty: (i.qty || 1) + 1 } : i));
+    } else {
+      setCart([...cart, { ...service, qty: 1 }]);
+    }
+  };
+
+  const removeFromCart = (serviceId) => {
+    setCart(cart.filter((i) => i.service_id !== serviceId));
+  };
+
+  const clearCart = () => setCart([]);
 
   const login = (token, user) => setAuth({ token, user });
   const logout = () => setAuth({ token: null, user: null });
@@ -75,11 +77,11 @@ export function ShopProvider({ children }) {
         addToCart,
         removeFromCart,
         clearCart,
-        isDark,
-        toggleTheme,
         auth,
         login,
         logout,
+        isDark,
+        toggleTheme,
       }}
     >
       {children}

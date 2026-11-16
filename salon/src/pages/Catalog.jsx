@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useShop } from "../context/ShopContext";
 import { apiGet } from "../api";
 import CategoryFilter from "../components/CategoryFilter";
 import ServiceCard from "../components/ServiceCard";
@@ -13,54 +12,66 @@ export default function Catalog() {
   const [selectedCats, setSelectedCats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { addToCart } = useShop();
+
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [cats, svcs] = await Promise.all([
+        apiGet("/api/categories"),
+        apiGet("/api/services"),
+      ]);
+      setCategories(cats);
+      setServices(svcs);
+    } catch (err) {
+      setError(err.message || "Ошибка загрузки данных с API");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [cats, svcs] = await Promise.all([
-          apiGet("/api/categories"),
-          apiGet("/api/services"),
-        ]);
-        setCategories(cats);
-        setServices(svcs);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
+    loadData();
   }, []);
 
-  function toggleCat(id) {
+  function toggleCat(catId) {
     setSelectedCats((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
     );
   }
 
-  const filtered =
-    selectedCats.length === 0
-      ? services
-      : services.filter((s) => selectedCats.includes(s.category_id));
+  const filtered = selectedCats.length === 0
+    ? services
+    : services.filter((s) => selectedCats.includes(s.category_id));
+
+  // Подсчёт количества товаров со скидкой (Требование 5: 30%)
+  const discountedCount = services.filter((s) => s.discount_percent > 0).length;
 
   return (
-    <div className="catalog">
+    <div className="catalog-page">
+      {/* Требование 6: Aside слева с чекбоксами */}
       <CategoryFilter
         categories={categories}
         selected={selectedCats}
         onToggle={toggleCat}
       />
+
       <div className="catalog-main">
-        <h1>Каталог услуг</h1>
-        {loading && <Loader />}
+        <div className="catalog-top">
+          <h1>Каталог услуг</h1>
+          <div className="discount-tag">
+            Товары со скидкой: {discountedCount} из {services.length} (30%)
+          </div>
+        </div>
+
+        {/* Требование 4: Сообщения о загрузке и ошибках */}
+        {loading && <Loader text="Загрузка каталога с сервера API..." />}
         {error && <ErrorBox message={error} />}
+
         {!loading && !error && (
-          <div className="cards">
+          <div className="cards-grid">
             {filtered.map((s) => (
-              <ServiceCard key={s.id} service={s} />
+              <ServiceCard key={s.service_id} service={s} />
             ))}
             {filtered.length === 0 && (
               <p>Нет услуг в выбранных категориях</p>

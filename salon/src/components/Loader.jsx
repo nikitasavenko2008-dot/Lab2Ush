@@ -1,7 +1,3 @@
-export default function Loader() {
-  return (
-    <div style={{ padding: 40, textAlign: "center", color: "#888" }}>
-      Загрузка...
-    </div>
-  );
+export default function Loader({ text = "Загрузка..." }) {
+  return <div style={{ padding: 20, textAlign: "center", color: "#666" }}>{text}</div>;
 }
