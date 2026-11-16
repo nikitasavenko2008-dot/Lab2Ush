@@ -41,6 +41,12 @@ body.dark {
   border-color: #4a4d66 !important;
 }
 
+.dark .appointment-item {
+  background: #181924 !important;
+  border-color: #383a4c !important;
+  color: #e2e8f0 !important;
+}
+
 .dark .card-desc,
 .dark .card-duration,
 .dark .item-detail,

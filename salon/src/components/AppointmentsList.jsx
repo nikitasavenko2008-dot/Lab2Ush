@@ -66,61 +66,122 @@ export default function AppointmentsList() {
     );
   }
 
+  const grouped = appointments.reduce((acc, a) => {
+    const day = a.appointment_date ? String(a.appointment_date).slice(0, 10) : "Без даты";
+    if (!acc[day]) acc[day] = [];
+    acc[day].push(a);
+    return acc;
+  }, {});
+
   return (
     <div style={{ display: "grid", gap: "15px", marginTop: "15px" }}>
-      {appointments.map((a) => (
-        <div
-          key={a.appointment_id}
-          className="appointment-card"
-          style={{
-            border: "1px solid #dee2e6",
-            padding: "20px",
-            borderRadius: "8px",
-            backgroundColor: "white",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-          }}
-        >
-          <div style={{ marginBottom: "10px" }}>
-            <strong style={{ color: "inherit" }}>Услуга:</strong>
-            <span style={{ marginLeft: "8px", fontWeight: "bold", color: "#2563eb" }}>
-              {a.service_name || "Услуга"}
-            </span>
-          </div>
-          <div style={{ marginBottom: "10px" }}>
-            <strong style={{ color: "inherit" }}>Время:</strong>
-            <span style={{ marginLeft: "8px", color: "inherit" }}>
-              {a.appointment_date ? String(a.appointment_date).slice(0, 10) : ""} {a.appointment_time || ""}
-            </span>
-          </div>
-          {a.paid_amount && (
-            <div style={{ marginBottom: "10px" }}>
-              <strong style={{ color: "inherit" }}>К оплате:</strong>
-              <span style={{ marginLeft: "8px", fontWeight: "bold", color: "#059669" }}>
-                {a.paid_amount} ₽
-              </span>
-            </div>
-          )}
-          <div>
-            <strong style={{ color: "inherit" }}>Статус:</strong>
-            <span
+      {Object.entries(grouped).map(([day, items]) => {
+        const first = items[0];
+        const dayTotal = items.reduce((sum, i) => sum + (Number(i.paid_amount) || Number(i.price) || 0), 0);
+        const groupStatus = items.some((i) => i.status === "scheduled") ? "scheduled" : first.status;
+
+        return (
+          <div
+            key={day}
+            className="appointment-card"
+            style={{
+              border: "1px solid #dee2e6",
+              padding: "20px",
+              borderRadius: "8px",
+              backgroundColor: "white",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+            }}
+          >
+            <div
               style={{
-                marginLeft: "8px",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                backgroundColor: statusStyles[a.status]?.bg || "#e5e7eb",
-                color: statusStyles[a.status]?.color || "#374151",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "14px",
+                borderBottom: "1px solid #eee",
+                paddingBottom: "10px",
               }}
             >
-              {statusLabels[a.status] || a.status || "Не указан"}
-            </span>
-          </div>
-          {a.notes && (
-            <div style={{ marginTop: "10px", fontSize: "13px", color: "#666" }}>
-              <b>Состав / Заметки:</b> {a.notes}
+              <div>
+                <strong style={{ fontSize: "16px" }}>📅 Дата: {day}</strong>
+                {first.appointment_time && (
+                  <span style={{ marginLeft: "10px", color: "#6b7280" }}>
+                    ⏱ {first.appointment_time}
+                  </span>
+                )}
+              </div>
+              <span
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: "4px",
+                  fontSize: "13px",
+                  backgroundColor: statusStyles[groupStatus]?.bg || "#e5e7eb",
+                  color: statusStyles[groupStatus]?.color || "#374151",
+                }}
+              >
+                {statusLabels[groupStatus] || groupStatus || "Не указан"}
+              </span>
             </div>
-          )}
-        </div>
-      ))}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ fontSize: "13px", fontWeight: "bold", color: "#6b7280" }}>
+                {items.length > 1 ? `Услуги на этот день (${items.length}):` : "Услуга:"}
+              </div>
+              {items.map((item, idx) => (
+                <div
+                  key={item.appointment_id || idx}
+                  className="appointment-item"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #e5e7eb",
+                    background: "#f9fafb",
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: "bold", color: "#2563eb" }}>
+                      {item.service_name || `Услуга #${item.service_id}`}
+                    </span>
+                    {item.notes && item.notes !== item.service_name && (
+                      <span style={{ marginLeft: "8px", fontSize: "12px", color: "#6b7280" }}>
+                        ({item.notes})
+                      </span>
+                    )}
+                  </div>
+                  {(item.paid_amount || item.price) && (
+                    <span style={{ fontWeight: "bold", color: "#059669" }}>
+                      {item.paid_amount || item.price} ₽
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {dayTotal > 0 && (
+              <div
+                style={{
+                  marginTop: "14px",
+                  paddingTop: "10px",
+                  borderTop: "1px solid #eee",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ color: "#6b7280" }}>
+                  {items.length > 1 ? `Всего услуг: ${items.length}` : ""}
+                </span>
+                <span style={{ fontWeight: "bold", fontSize: "15px" }}>
+                  Итого к оплате: <span style={{ color: "#059669" }}>{dayTotal} ₽</span>
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
