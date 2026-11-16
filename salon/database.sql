@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS categories (
     name VARCHAR(100) NOT NULL UNIQUE
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_lower_name ON categories (LOWER(name));
+
 CREATE TABLE IF NOT EXISTS coupons (
     coupon_id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,

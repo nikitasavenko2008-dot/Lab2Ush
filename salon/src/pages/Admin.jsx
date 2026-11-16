@@ -51,9 +51,18 @@ export default function Admin() {
 
   async function handleAddCategory(e) {
     e.preventDefault();
-    if (!newCat.trim()) return;
+    const trimmed = newCat.trim();
+    if (!trimmed) {
+      alert("Введите название категории");
+      return;
+    }
+    const isDuplicate = categories.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+    if (isDuplicate) {
+      alert("Категория с таким названием уже существует");
+      return;
+    }
     try {
-      const added = await apiPost("/api/categories", { name: newCat.trim() });
+      const added = await apiPost("/api/categories", { name: trimmed });
       setCategories([...categories, added]);
       setNewCat("");
       alert("Категория добавлена! Она сразу появится в aside каталога.");

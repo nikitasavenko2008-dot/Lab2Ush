@@ -89,12 +89,22 @@ app.get("/api/categories", async (req, res) => {
 
 app.post("/api/categories", async (req, res) => {
   const { name } = req.body;
-  if (!name?.trim()) return res.status(400).json({ error: "Введите название категории" });
+  const trimmed = name?.trim();
+  if (!trimmed) {
+    return res.status(400).json({ error: "Введите название категории" });
+  }
   try {
-    await queryDB("INSERT INTO categories (name) VALUES (?)", [name.trim()]);
+    const existing = await queryDB("SELECT * FROM categories WHERE LOWER(name) = LOWER(?)", [trimmed]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: "Категория с таким названием уже существует" });
+    }
+    await queryDB("INSERT INTO categories (name) VALUES (?)", [trimmed]);
     const all = await queryDB("SELECT * FROM categories ORDER BY category_id DESC");
     res.json(all[0]);
   } catch (err) {
+    if (err.message && (err.message.includes("уникальности") || err.message.includes("unique") || err.code === "23505")) {
+      return res.status(400).json({ error: "Категория с таким названием уже существует" });
+    }
     res.status(500).json({ error: err.message });
   }
 });
