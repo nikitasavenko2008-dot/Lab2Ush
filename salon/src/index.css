@@ -12,41 +12,43 @@ body {
   transition: background 0.2s, color 0.2s;
 }
 
+html.dark,
+html.dark body,
 body.dark {
   background: #181924;
   color: #e2e8f0;
 }
 
-body.dark .navbar,
-body.dark .aside-filter,
-body.dark .service-card,
-body.dark .cart-item,
-body.dark .cart-order-box,
-body.dark .login-card,
-body.dark .admin-box,
-body.dark .user-table th,
-body.dark .user-table td {
+.dark .navbar,
+.dark .aside-filter,
+.dark .service-card,
+.dark .cart-item,
+.dark .cart-order-box,
+.dark .login-card,
+.dark .admin-box,
+.dark .user-table th,
+.dark .user-table td {
   background: #232533 !important;
   color: #e2e8f0 !important;
   border-color: #383a4c !important;
 }
 
-body.dark input,
-body.dark select {
+.dark input,
+.dark select {
   background: #181924 !important;
   color: #e2e8f0 !important;
   border-color: #4a4d66 !important;
 }
 
-body.dark .card-desc,
-body.dark .card-duration,
-body.dark .item-detail,
-body.dark .login-hints {
+.dark .card-desc,
+.dark .card-duration,
+.dark .item-detail,
+.dark .login-hints {
   color: #94a3b8 !important;
 }
 
-body.dark .regular-price,
-body.dark .item-sum {
+.dark .regular-price,
+.dark .item-sum {
   color: #f8fafc !important;
 }
 
@@ -76,7 +78,7 @@ a {
   color: #2563eb;
 }
 
-body.dark .nav-brand {
+.dark .nav-brand {
   color: #60a5fa;
 }
 
@@ -97,7 +99,7 @@ body.dark .nav-brand {
   font-weight: bold;
 }
 
-body.dark .nav-links a.active {
+.dark .nav-links a.active {
   background: #312e81;
   color: #a5b4fc;
 }
