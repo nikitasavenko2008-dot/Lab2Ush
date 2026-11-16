@@ -67,6 +67,18 @@ export function ShopProvider({ children }) {
     setCart(cart.filter((i) => i.service_id !== serviceId));
   };
 
+  const updateQty = (serviceId, delta) => {
+    setCart((prev) =>
+      prev.map((i) => {
+        if (i.service_id === serviceId) {
+          const next = (i.qty || 1) + delta;
+          return { ...i, qty: next < 1 ? 1 : next };
+        }
+        return i;
+      })
+    );
+  };
+
   const clearCart = () => setCart([]);
 
   const login = (token, user) => setAuth({ token, user });
@@ -78,6 +90,7 @@ export function ShopProvider({ children }) {
         cart,
         addToCart,
         removeFromCart,
+        updateQty,
         clearCart,
         auth,
         login,

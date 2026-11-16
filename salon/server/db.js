@@ -90,7 +90,7 @@ function seedDB() {
   }
 
   const insertCoupon = DB.prepare("INSERT INTO coupons (code, percent) VALUES (?, ?)");
-  insertCoupon.run("WELCOME10", 10);
+  insertCoupon.run("VIP10", 10);
   insertCoupon.run("VIP20", 20);
   insertCoupon.run("HOLIDAY15", 15);
   insertCoupon.run("SPRING25", 25);

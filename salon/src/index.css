@@ -26,6 +26,7 @@ body.dark {
 .dark .cart-order-box,
 .dark .login-card,
 .dark .admin-box,
+.dark .appointment-card,
 .dark .user-table th,
 .dark .user-table td {
   background: #232533 !important;

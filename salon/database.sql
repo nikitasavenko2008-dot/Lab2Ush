@@ -71,7 +71,7 @@ INSERT INTO categories (name) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO coupons (code, percent) VALUES 
-('WELCOME10', 10),
+('VIP10', 10),
 ('VIP20', 20),
 ('HOLIDAY15', 15)
 ON CONFLICT (code) DO NOTHING;

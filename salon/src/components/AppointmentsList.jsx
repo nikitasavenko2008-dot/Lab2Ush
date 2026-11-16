@@ -1,6 +1,18 @@
 import { useEffect, useState } from "react";
 import { getAppointments } from "../api/appointments";
 
+const statusLabels = {
+  completed: "Завершено",
+  scheduled: "Запланировано",
+  cancelled: "Отменено",
+};
+
+const statusStyles = {
+  completed: { bg: "#d4edda", color: "#155724" },
+  scheduled: { bg: "#dbeafe", color: "#1e40af" },
+  cancelled: { bg: "#fee2e2", color: "#991b1b" },
+};
+
 export default function AppointmentsList() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +71,7 @@ export default function AppointmentsList() {
       {appointments.map((a) => (
         <div
           key={a.appointment_id}
+          className="appointment-card"
           style={{
             border: "1px solid #dee2e6",
             padding: "20px",
@@ -68,13 +81,14 @@ export default function AppointmentsList() {
           }}
         >
           <div style={{ marginBottom: "10px" }}>
-            <strong style={{ color: "#495057" }}>service_id:</strong>
-            <span style={{ marginLeft: "8px", color: "#007bff" }}>{a.service_id}</span>
-            {a.service_name && <span style={{ marginLeft: "8px", color: "#333" }}>({a.service_name})</span>}
+            <strong style={{ color: "inherit" }}>Услуга:</strong>
+            <span style={{ marginLeft: "8px", fontWeight: "bold", color: "#2563eb" }}>
+              {a.service_name || `Услуга #${a.service_id}`}
+            </span>
           </div>
           <div style={{ marginBottom: "10px" }}>
-            <strong style={{ color: "#495057" }}>Время:</strong>
-            <span style={{ marginLeft: "8px", color: "black" }}>
+            <strong style={{ color: "inherit" }}>Время:</strong>
+            <span style={{ marginLeft: "8px", color: "inherit" }}>
               {a.appointment_date ? String(a.appointment_date).slice(0, 10) : ""} {a.appointment_time || ""}
             </span>
           </div>
@@ -85,11 +99,11 @@ export default function AppointmentsList() {
                 marginLeft: "8px",
                 padding: "4px 8px",
                 borderRadius: "4px",
-                backgroundColor: a.status === "completed" ? "#d4edda" : "#f8d7da",
-                color: a.status === "completed" ? "#155724" : "#721c24",
+                backgroundColor: statusStyles[a.status]?.bg || "#e5e7eb",
+                color: statusStyles[a.status]?.color || "#374151",
               }}
             >
-              {a.status || "не указан"}
+              {statusLabels[a.status] || a.status || "Не указан"}
             </span>
           </div>
           {a.notes && (

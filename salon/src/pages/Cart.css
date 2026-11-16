@@ -32,6 +32,45 @@
   flex: 1;
 }
 
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px;
+}
+
+.qty-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  background: #f3f4f6;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.qty-btn:hover {
+  background: #e5e7eb;
+}
+
+.qty-value {
+  font-weight: bold;
+  min-width: 18px;
+  text-align: center;
+}
+
+body.dark .qty-btn,
+.dark .qty-btn {
+  background: #2a2d3d !important;
+  color: #e2e8f0 !important;
+  border-color: #4a4d66 !important;
+}
+
 .item-detail {
   color: #666;
   font-size: 14px;

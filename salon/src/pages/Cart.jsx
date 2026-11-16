@@ -7,7 +7,7 @@ import ErrorBox from "../components/ErrorBox";
 import "./Cart.css";
 
 export default function Cart() {
-  const { cart, removeFromCart, clearCart, auth } = useShop();
+  const { cart, removeFromCart, updateQty, clearCart, auth } = useShop();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,8 +16,9 @@ export default function Cart() {
     }
   }, [auth, navigate]);
 
-  const [date, setDate] = useState("2024-02-01");
-  const [time, setTime] = useState("14:00");
+  const today = new Date().toISOString().split("T")[0];
+  const [date, setDate] = useState(today);
+  const [time, setTime] = useState("12:00");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
@@ -33,6 +34,10 @@ export default function Cart() {
   async function handleCheckout() {
     if (!auth.token) {
       navigate("/login");
+      return;
+    }
+    if (date < today) {
+      setError("Нельзя записаться на прошедшую дату");
       return;
     }
     setLoading(true);
@@ -73,8 +78,27 @@ export default function Cart() {
               return (
                 <div key={item.service_id} className="cart-item">
                   <div className="item-name">{item.name}</div>
+                  <div className="qty-control">
+                    <button
+                      type="button"
+                      className="qty-btn"
+                      onClick={() => updateQty(item.service_id, -1)}
+                      title="Уменьшить"
+                    >
+                      −
+                    </button>
+                    <span className="qty-value">{item.qty || 1}</span>
+                    <button
+                      type="button"
+                      className="qty-btn"
+                      onClick={() => updateQty(item.service_id, 1)}
+                      title="Увеличить"
+                    >
+                      +
+                    </button>
+                  </div>
                   <div className="item-detail">
-                    {unitPrice} ₽ × {item.qty || 1} шт.
+                    {unitPrice} ₽/шт.
                     {item.discount_percent > 0 && (
                       <span className="badge">-{item.discount_percent}%</span>
                     )}
@@ -95,11 +119,25 @@ export default function Cart() {
             <div className="date-fields">
               <label>
                 Дата визита:
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+                <input
+                  type="date"
+                  min={today}
+                  value={date}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDate(val < today ? today : val);
+                  }}
+                />
               </label>
               <label>
                 Время визита:
-                <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+                <input
+                  type="time"
+                  min="09:00"
+                  max="21:00"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                />
               </label>
             </div>
 
