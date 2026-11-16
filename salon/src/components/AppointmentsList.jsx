@@ -83,7 +83,7 @@ export default function AppointmentsList() {
           <div style={{ marginBottom: "10px" }}>
             <strong style={{ color: "inherit" }}>Услуга:</strong>
             <span style={{ marginLeft: "8px", fontWeight: "bold", color: "#2563eb" }}>
-              {a.service_name || `Услуга #${a.service_id}`}
+              {a.service_name || "Услуга"}
             </span>
           </div>
           <div style={{ marginBottom: "10px" }}>
@@ -92,8 +92,16 @@ export default function AppointmentsList() {
               {a.appointment_date ? String(a.appointment_date).slice(0, 10) : ""} {a.appointment_time || ""}
             </span>
           </div>
+          {a.paid_amount && (
+            <div style={{ marginBottom: "10px" }}>
+              <strong style={{ color: "inherit" }}>К оплате:</strong>
+              <span style={{ marginLeft: "8px", fontWeight: "bold", color: "#059669" }}>
+                {a.paid_amount} ₽
+              </span>
+            </div>
+          )}
           <div>
-            <strong style={{ color: "#495057" }}>Статус:</strong>
+            <strong style={{ color: "inherit" }}>Статус:</strong>
             <span
               style={{
                 marginLeft: "8px",
@@ -108,7 +116,7 @@ export default function AppointmentsList() {
           </div>
           {a.notes && (
             <div style={{ marginTop: "10px", fontSize: "13px", color: "#666" }}>
-              <b>Заметки:</b> {a.notes}
+              <b>Состав / Заметки:</b> {a.notes}
             </div>
           )}
         </div>

@@ -227,6 +227,8 @@ app.post("/api/appointments", async (req, res) => {
 
   try {
     let total = 0;
+    const itemNames = [];
+
     for (const item of items) {
       const svcId = item.service_id || item.id;
       const svcs = await queryDB("SELECT * FROM services WHERE service_id = ?", [svcId]);
@@ -235,23 +237,30 @@ app.post("/api/appointments", async (req, res) => {
       const svc = svcs[0];
       const withSvcDisc = svc.price * (1 - (svc.discount_percent || 0) / 100);
       const finalPrice = Math.round(withSvcDisc * (1 - cPercent / 100));
+      const qty = item.qty || 1;
+      total += finalPrice * qty;
 
-      for (let i = 0; i < (item.qty || 1); i++) {
-        await queryDB(
-          "INSERT INTO appointments (user_id, service_id, appointment_date, appointment_time, status, notes) VALUES (?, ?, ?, ?, 'scheduled', ?)",
-          [userId, svc.service_id, date, time, notes || svc.name]
-        );
-        const lastAppt = await queryDB("SELECT appointment_id FROM appointments ORDER BY appointment_id DESC LIMIT 1");
-        const apptId = lastAppt[0].appointment_id;
-
-        await queryDB(
-          "INSERT INTO payments (appointment_id, amount, method, status) VALUES (?, ?, 'card', 'paid')",
-          [apptId, finalPrice]
-        );
-        total += finalPrice;
-      }
+      itemNames.push(qty > 1 ? `${svc.name} (${qty} шт.)` : svc.name);
     }
-    res.json({ message: "Запись успешно создана!", total });
+
+    const firstSvcId = items[0].service_id || items[0].id || 1;
+    const servicesSummary = itemNames.join(", ");
+    const appointmentNotes = notes ? `${servicesSummary} — ${notes}` : servicesSummary;
+
+    await queryDB(
+      "INSERT INTO appointments (user_id, service_id, appointment_date, appointment_time, status, notes) VALUES (?, ?, ?, ?, 'scheduled', ?)",
+      [userId, firstSvcId, date, time, appointmentNotes]
+    );
+
+    const lastAppt = await queryDB("SELECT appointment_id FROM appointments ORDER BY appointment_id DESC LIMIT 1");
+    const apptId = lastAppt[0].appointment_id;
+
+    await queryDB(
+      "INSERT INTO payments (appointment_id, amount, method, status) VALUES (?, ?, 'card', 'paid')",
+      [apptId, total]
+    );
+
+    res.json({ message: "Запись успешно создана!", total, appointment_id: apptId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
