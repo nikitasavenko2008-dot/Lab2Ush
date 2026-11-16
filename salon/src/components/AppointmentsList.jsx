@@ -32,9 +32,10 @@ export default function AppointmentsList() {
   }
 
   if (error) {
+    const errorText = error.includes("Bad Gateway") || error.includes("Failed to fetch") || error.includes("502") ? "Сервер выключен" : error;
     return (
       <div style={{ color: "red", padding: "20px" }}>
-        <div>Ошибка: {error}</div>
+        <div>Ошибка: {errorText}</div>
         <button
           onClick={handleRefresh}
           style={{
