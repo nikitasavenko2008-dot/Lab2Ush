@@ -2,13 +2,15 @@
  * Панель управления Администратора (Лаб 4, разд. 3.9)
  * Лабораторная работа №4 — Студент: Никита Савенко
  * 
- * В соответствии с п. 3.9 требований:
- * Администратор может просматривать, добавлять, изменять и удалять абсолютно все ресурсы:
- * - Услуги кейтеринга (CRUD)
- * - Категории (CRUD)
- * - Заказы клиентов (просмотр и смену статусов: Новый, В обработке, Подтвержден, Выполнен, Отменен)
- * - Отзывы клиентов (модерация и удаление)
- * - Пользователи (просмотр, изменение роли user/admin, удаление)
+ * В соответствии с требованиями:
+ * 1. Администратор управляет абсолютно всеми ресурсами:
+ *    - Услуги кейтеринга (добавление, редактирование, удаление, установка скидок)
+ *    - Категории услуг (добавление, изменение названия, удаление)
+ *    - Все заказы клиентов (просмотр контактов, адреса, даты и смена статусов)
+ *    - Отзывы клиентов (модерация и удаление)
+ *    - Пользователи (просмотр, изменение роли user/admin, удаление)
+ * 2. Добавлен быстрый поиск по каждому разделу (по услугам, категориям, заказам, отзывам и пользователям).
+ * 3. Добавлена возможность назначать и изменять скидки на любые услуги.
  */
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +27,7 @@ export default function Admin() {
   // Активная вкладка: "services" | "categories" | "orders" | "reviews" | "users"
   const [activeTab, setActiveTab] = useState("services");
 
-  // Состояние загрузки и общих ошибок
+  // Состояние загрузки и общих сообщений
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState("");
@@ -37,6 +39,13 @@ export default function Admin() {
   const [reviews, setReviews] = useState([]);
   const [users, setUsers] = useState([]);
 
+  // Строки поиска для каждого раздела
+  const [searchService, setSearchService] = useState("");
+  const [searchCategory, setSearchCategory] = useState("");
+  const [searchOrder, setSearchOrder] = useState("");
+  const [searchReview, setSearchReview] = useState("");
+  const [searchUser, setSearchUser] = useState("");
+
   // Форма добавления/редактирования услуги
   const [editingServiceId, setEditingServiceId] = useState(null);
   const [serviceForm, setServiceForm] = useState({
@@ -46,6 +55,7 @@ export default function Admin() {
     price: "",
     category_id: "",
     image: "",
+    discount_percent: 0,
   });
 
   // Форма категории
@@ -98,7 +108,7 @@ export default function Admin() {
   };
 
   // ==========================================
-  // УПРАВЛЕНИЕ УСЛУГАМИ (CRUD)
+  // УПРАВЛЕНИЕ УСЛУГАМИ (CRUD + СКИДКИ)
   // ==========================================
 
   const handleSaveService = async (e) => {
@@ -125,6 +135,7 @@ export default function Admin() {
         price: "",
         category_id: categories[0]?.category_id || "",
         image: "",
+        discount_percent: 0,
       });
 
       const updated = await apiGet("/api/services");
@@ -143,8 +154,9 @@ export default function Admin() {
       price: s.price,
       category_id: s.category_id,
       image: s.image || "",
+      discount_percent: s.discount_percent || 0,
     });
-    window.scrollTo({ top: 200, behavior: "smooth" });
+    window.scrollTo({ top: 150, behavior: "smooth" });
   };
 
   const handleDeleteService = async (serviceId, name) => {
@@ -153,6 +165,20 @@ export default function Admin() {
       await apiDelete(`/api/services/${serviceId}`, auth.token);
       setServices((prev) => prev.filter((s) => s.service_id !== serviceId));
       showSuccess(`Услуга «${name}» удалена`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Быстрая смена скидки на услугу (0%, 10%, 20%, 30%, 50% или произвольная)
+  const handleSetServiceDiscount = async (serviceId, percent) => {
+    const validPercent = Math.max(0, Math.min(90, Number(percent) || 0));
+    try {
+      await apiPut(`/api/services/${serviceId}/discount`, { discount_percent: validPercent }, auth.token);
+      setServices((prev) =>
+        prev.map((s) => (s.service_id === serviceId ? { ...s, discount_percent: validPercent } : s))
+      );
+      showSuccess(`Скидка ${validPercent}% успешно установлена`);
     } catch (err) {
       alert(err.message);
     }
@@ -260,13 +286,65 @@ export default function Admin() {
     }
   };
 
+  // ------------------------------------------
+  // ФИЛЬТРАЦИЯ ДАННЫХ ПО СТРОКАМ ПОИСКА
+  // ------------------------------------------
+  const filteredServices = services.filter((s) => {
+    if (!searchService.trim()) return true;
+    const term = searchService.toLowerCase();
+    return (
+      s.name?.toLowerCase().includes(term) ||
+      s.description?.toLowerCase().includes(term) ||
+      s.category_name?.toLowerCase().includes(term)
+    );
+  });
+
+  const filteredCategories = categories.filter((c) => {
+    if (!searchCategory.trim()) return true;
+    return c.name?.toLowerCase().includes(searchCategory.toLowerCase());
+  });
+
+  const filteredOrders = orders.filter((o) => {
+    if (!searchOrder.trim()) return true;
+    const term = searchOrder.toLowerCase();
+    return (
+      String(o.order_id).includes(term) ||
+      o.user_name?.toLowerCase().includes(term) ||
+      o.user_email?.toLowerCase().includes(term) ||
+      o.user_phone?.toLowerCase().includes(term) ||
+      o.delivery_address?.toLowerCase().includes(term) ||
+      o.status?.toLowerCase().includes(term)
+    );
+  });
+
+  const filteredReviews = reviews.filter((r) => {
+    if (!searchReview.trim()) return true;
+    const term = searchReview.toLowerCase();
+    return (
+      r.service_name?.toLowerCase().includes(term) ||
+      r.user_name?.toLowerCase().includes(term) ||
+      r.comment?.toLowerCase().includes(term)
+    );
+  });
+
+  const filteredUsers = users.filter((u) => {
+    if (!searchUser.trim()) return true;
+    const term = searchUser.toLowerCase();
+    return (
+      u.name?.toLowerCase().includes(term) ||
+      u.email?.toLowerCase().includes(term) ||
+      u.phone?.toLowerCase().includes(term) ||
+      u.role?.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <div className="admin-page-container">
       <div className="admin-page-header">
         <div>
-          <h1>👑 Панель управления администратора</h1>
+          <h1>Панель администратора</h1>
           <p className="admin-subtitle">
-            Полный контроль над каталогом услуг, категориями, заказами клиентов, отзывами и пользователями
+            Управление каталогом услуг, скидками, категориями, заказами клиентов, отзывами и ролями
           </p>
         </div>
       </div>
@@ -312,7 +390,7 @@ export default function Admin() {
 
       {!loading && (
         <div className="admin-content-pane">
-          {/* ВКЛАДКА 1: УСЛУГИ */}
+          {/* ВКЛАДКА 1: УСЛУГИ + СКИДКИ */}
           {activeTab === "services" && (
             <div className="admin-section">
               <div className="admin-card form-card">
@@ -355,6 +433,20 @@ export default function Admin() {
                   </div>
 
                   <div className="form-group">
+                    <label>Скидка (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="90"
+                      placeholder="0"
+                      value={serviceForm.discount_percent}
+                      onChange={(e) =>
+                        setServiceForm({ ...serviceForm, discount_percent: Number(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-group">
                     <label>Длительность (минут)</label>
                     <input
                       type="number"
@@ -364,7 +456,7 @@ export default function Admin() {
                     />
                   </div>
 
-                  <div className="form-group full-width">
+                  <div className="form-group">
                     <label>Ссылка на фото (URL)</label>
                     <input
                       type="text"
@@ -377,8 +469,8 @@ export default function Admin() {
                   <div className="form-group full-width">
                     <label>Подробное описание услуги</label>
                     <textarea
-                      rows="3"
-                      placeholder="Состав услуги, условия выезда, требования..."
+                      rows="2"
+                      placeholder="Состав услуги, особенности выезда..."
                       value={serviceForm.description}
                       onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
                     />
@@ -401,6 +493,7 @@ export default function Admin() {
                             price: "",
                             category_id: categories[0]?.category_id || "",
                             image: "",
+                            discount_percent: 0,
                           });
                         }}
                       >
@@ -411,9 +504,25 @@ export default function Admin() {
                 </form>
               </div>
 
-              {/* Таблица услуг */}
+              {/* Таблица услуг с поиском и управлением скидками */}
               <div className="admin-card table-card">
-                <h3>Список всех услуг в каталоге ({services.length})</h3>
+                <div className="card-top-header">
+                  <h3>Список услуг каталога ({filteredServices.length})</h3>
+                  <div className="admin-search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Поиск по услугам..."
+                      value={searchService}
+                      onChange={(e) => setSearchService(e.target.value)}
+                    />
+                    {searchService && (
+                      <button className="clear-search-btn" onClick={() => setSearchService("")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="admin-table-wrap">
                   <table className="admin-data-table">
                     <thead>
@@ -421,47 +530,81 @@ export default function Admin() {
                         <th>Фото</th>
                         <th>Название</th>
                         <th>Категория (JOIN)</th>
-                        <th>Цена</th>
-                        <th>Время</th>
-                        <th>Рейтинг</th>
+                        <th>Базовая цена</th>
+                        <th>Скидка на услугу</th>
+                        <th>Итоговая цена</th>
                         <th>Действия</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {services.map((s) => (
-                        <tr key={s.service_id}>
-                          <td>
-                            <img src={s.image} alt={s.name} className="admin-table-thumb" />
-                          </td>
-                          <td>
-                            <strong>{s.name}</strong>
-                          </td>
-                          <td>
-                            <span className="cat-chip">{s.category_name}</span>
-                          </td>
-                          <td className="price-bold">{Number(s.price).toLocaleString("ru-RU")} ₽</td>
-                          <td>{s.duration} мин</td>
-                          <td>★ {s.avg_rating || "—"}</td>
-                          <td>
-                            <div className="table-actions-cell">
-                              <button
-                                className="action-edit-btn"
-                                onClick={() => handleStartEditService(s)}
-                                title="Редактировать"
-                              >
-                                ✎
-                              </button>
-                              <button
-                                className="action-delete-btn"
-                                onClick={() => handleDeleteService(s.service_id, s.name)}
-                                title="Удалить"
-                              >
-                                🗑
-                              </button>
-                            </div>
+                      {filteredServices.map((s) => {
+                        const disc = Number(s.discount_percent) || 0;
+                        const finalP = disc > 0 ? Math.round(s.price * (1 - disc / 100)) : s.price;
+
+                        return (
+                          <tr key={s.service_id}>
+                            <td>
+                              <img src={s.image} alt={s.name} className="admin-table-thumb" />
+                            </td>
+                            <td>
+                              <strong>{s.name}</strong>
+                              <div className="service-subtext">⏱ {s.duration} мин | ★ {s.avg_rating || "—"}</div>
+                            </td>
+                            <td>
+                              <span className="cat-chip">{s.category_name}</span>
+                            </td>
+                            <td className="price-col">
+                              {Number(s.price).toLocaleString("ru-RU")} ₽
+                            </td>
+                            <td>
+                              <div className="discount-setter-inline">
+                                <select
+                                  value={disc}
+                                  onChange={(e) => handleSetServiceDiscount(s.service_id, e.target.value)}
+                                  className="discount-dropdown"
+                                >
+                                  <option value="0">0% (Без скидки)</option>
+                                  <option value="10">10%</option>
+                                  <option value="15">15%</option>
+                                  <option value="20">20%</option>
+                                  <option value="25">25%</option>
+                                  <option value="30">30%</option>
+                                  <option value="50">50%</option>
+                                </select>
+                                {disc > 0 && <span className="discount-tag-badge">-{disc}%</span>}
+                              </div>
+                            </td>
+                            <td className="final-price-col">
+                              <strong>{Number(finalP).toLocaleString("ru-RU")} ₽</strong>
+                            </td>
+                            <td>
+                              <div className="table-actions-cell">
+                                <button
+                                  className="action-edit-btn"
+                                  onClick={() => handleStartEditService(s)}
+                                  title="Редактировать"
+                                >
+                                  ✎
+                                </button>
+                                <button
+                                  className="action-delete-btn"
+                                  onClick={() => handleDeleteService(s.service_id, s.name)}
+                                  title="Удалить"
+                                >
+                                  🗑
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredServices.length === 0 && (
+                        <tr>
+                          <td colSpan="7" className="empty-table-row">
+                            Услуг по запросу «{searchService}» не найдено
                           </td>
                         </tr>
-                      ))}
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -483,24 +626,40 @@ export default function Admin() {
                     onChange={(e) => setNewCatName(e.target.value)}
                   />
                   <button type="submit" className="admin-primary-btn">
-                    + Добавить категорию
+                    + Добавить
                   </button>
                 </form>
               </div>
 
               <div className="admin-card table-card">
-                <h3>Существующие категории ({categories.length})</h3>
+                <div className="card-top-header">
+                  <h3>Существующие категории ({filteredCategories.length})</h3>
+                  <div className="admin-search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Поиск категорий..."
+                      value={searchCategory}
+                      onChange={(e) => setSearchCategory(e.target.value)}
+                    />
+                    {searchCategory && (
+                      <button className="clear-search-btn" onClick={() => setSearchCategory("")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="admin-table-wrap">
                   <table className="admin-data-table">
                     <thead>
                       <tr>
                         <th>Название категории</th>
-                        <th>Услуг в категории</th>
+                        <th>Количество услуг</th>
                         <th>Действия</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map((c) => (
+                      {filteredCategories.map((c) => (
                         <tr key={c.category_id}>
                           <td>
                             {editingCatId === c.category_id ? (
@@ -548,6 +707,13 @@ export default function Admin() {
                           </td>
                         </tr>
                       ))}
+                      {filteredCategories.length === 0 && (
+                        <tr>
+                          <td colSpan="3" className="empty-table-row">
+                            Категорий по запросу «{searchCategory}» не найдено
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -559,9 +725,25 @@ export default function Admin() {
           {activeTab === "orders" && (
             <div className="admin-section">
               <div className="admin-card table-card">
-                <h3>Все заказы клиентов ({orders.length})</h3>
+                <div className="card-top-header">
+                  <h3>Все заказы клиентов ({filteredOrders.length})</h3>
+                  <div className="admin-search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Поиск по номеру, клиенту, телефону, адресу..."
+                      value={searchOrder}
+                      onChange={(e) => setSearchOrder(e.target.value)}
+                    />
+                    {searchOrder && (
+                      <button className="clear-search-btn" onClick={() => setSearchOrder("")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="admin-orders-list">
-                  {orders.map((o) => (
+                  {filteredOrders.map((o) => (
                     <div key={o.order_id} className="admin-order-card">
                       <div className="admin-order-header">
                         <div>
@@ -590,7 +772,11 @@ export default function Admin() {
                       <div className="admin-order-body">
                         <div className="order-meta-line">
                           <span>📍 <strong>Адрес:</strong> {o.delivery_address}</span>
-                          <span>📅 <strong>Дата и время:</strong> {o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("ru-RU") : ""} в {o.delivery_time}</span>
+                          <span>
+                            📅 <strong>Дата:</strong>{" "}
+                            {o.delivery_date ? new Date(o.delivery_date).toLocaleDateString("ru-RU") : ""}{" "}
+                            в {o.delivery_time}
+                          </span>
                         </div>
                         {o.notes && <div className="order-notes-line">📝 {o.notes}</div>}
 
@@ -599,7 +785,8 @@ export default function Admin() {
                           <ul>
                             {o.items?.map((it) => (
                               <li key={it.order_item_id}>
-                                {it.service_name} ({it.category_name}) — {it.quantity} шт. × {Number(it.price).toLocaleString("ru-RU")} ₽
+                                {it.service_name} ({it.category_name}) — {it.quantity} шт. ×{" "}
+                                {Number(it.price).toLocaleString("ru-RU")} ₽
                               </li>
                             ))}
                           </ul>
@@ -607,13 +794,17 @@ export default function Admin() {
                       </div>
 
                       <div className="admin-order-footer">
-                        <span>Сумма заказа:</span>
-                        <strong className="order-amount-text">{Number(o.total_amount).toLocaleString("ru-RU")} ₽</strong>
+                        <span>Итоговая сумма:</span>
+                        <strong className="order-amount-text">
+                          {Number(o.total_amount).toLocaleString("ru-RU")} ₽
+                        </strong>
                       </div>
                     </div>
                   ))}
 
-                  {orders.length === 0 && <p className="empty-notice">Заказов пока нет</p>}
+                  {filteredOrders.length === 0 && (
+                    <p className="empty-notice">Заказов по вашему поисковому запросу не найдено</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -623,7 +814,23 @@ export default function Admin() {
           {activeTab === "reviews" && (
             <div className="admin-section">
               <div className="admin-card table-card">
-                <h3>Модерация отзывов клиентов ({reviews.length})</h3>
+                <div className="card-top-header">
+                  <h3>Модерация отзывов клиентов ({filteredReviews.length})</h3>
+                  <div className="admin-search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Поиск по услуге, клиенту, тексту..."
+                      value={searchReview}
+                      onChange={(e) => setSearchReview(e.target.value)}
+                    />
+                    {searchReview && (
+                      <button className="clear-search-btn" onClick={() => setSearchReview("")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="admin-table-wrap">
                   <table className="admin-data-table">
                     <thead>
@@ -637,7 +844,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {reviews.map((r) => (
+                      {filteredReviews.map((r) => (
                         <tr key={r.review_id}>
                           <td><strong>{r.service_name}</strong></td>
                           <td>👤 {r.user_name}</td>
@@ -655,6 +862,13 @@ export default function Admin() {
                           </td>
                         </tr>
                       ))}
+                      {filteredReviews.length === 0 && (
+                        <tr>
+                          <td colSpan="6" className="empty-table-row">
+                            Отзывов по запросу не найдено
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -666,7 +880,23 @@ export default function Admin() {
           {activeTab === "users" && (
             <div className="admin-section">
               <div className="admin-card table-card">
-                <h3>Зарегистрированные пользователи ({users.length})</h3>
+                <div className="card-top-header">
+                  <h3>Зарегистрированные пользователи ({filteredUsers.length})</h3>
+                  <div className="admin-search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Поиск по имени, email, телефону..."
+                      value={searchUser}
+                      onChange={(e) => setSearchUser(e.target.value)}
+                    />
+                    {searchUser && (
+                      <button className="clear-search-btn" onClick={() => setSearchUser("")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="admin-table-wrap">
                   <table className="admin-data-table">
                     <thead>
@@ -680,7 +910,7 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {users.map((u) => (
+                      {filteredUsers.map((u) => (
                         <tr key={u.user_id}>
                           <td><strong>{u.name}</strong></td>
                           <td>{u.email}</td>
@@ -710,6 +940,13 @@ export default function Admin() {
                           </td>
                         </tr>
                       ))}
+                      {filteredUsers.length === 0 && (
+                        <tr>
+                          <td colSpan="6" className="empty-table-row">
+                            Пользователей по запросу «{searchUser}» не найдено
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

@@ -92,13 +92,9 @@ export default function Catalog() {
 
   return (
     <div className="catalog-container">
-      <div className="catalog-hero-banner">
-        <div className="hero-content">
-          <h2>Премиальный кейтеринг и ресторанное обслуживание</h2>
-          <p>
-            Организация банкетов, фуршетов, выездные шеф-повара, профессиональные официанты и мобильный бар для вашего мероприятия
-          </p>
-        </div>
+      <div className="catalog-simple-header">
+        <h1>🍽️ Каталог услуг ресторана и кейтеринга</h1>
+        <p>Выездные шеф-повара, официанты, фуршетные сеты, бар и организация банкетов</p>
       </div>
 
       <div className="catalog-layout">

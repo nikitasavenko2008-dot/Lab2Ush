@@ -422,6 +422,7 @@ app.get("/api/services", async (req, res) => {
       s.price,
       s.category_id,
       s.image,
+      COALESCE(s.discount_percent, 0) AS discount_percent,
       c.name AS category_name,
       COALESCE(ROUND(AVG(r.rating), 1), 0) AS avg_rating,
       COUNT(r.review_id) AS reviews_count
@@ -454,7 +455,7 @@ app.get("/api/services", async (req, res) => {
   }
 
   sql += `
-    GROUP BY s.service_id, s.name, s.description, s.duration, s.price, s.category_id, s.image, c.name
+    GROUP BY s.service_id, s.name, s.description, s.duration, s.price, s.category_id, s.image, s.discount_percent, c.name
     ORDER BY s.service_id ASC
   `;
 
@@ -499,15 +500,15 @@ app.get("/api/services/:id", async (req, res) => {
 
 // Создание услуги (Администратор)
 app.post("/api/services", adminMiddleware, async (req, res) => {
-  const { name, description, duration, price, category_id, image } = req.body;
+  const { name, description, duration, price, category_id, image, discount_percent } = req.body;
   if (!name?.trim() || !price || !category_id) {
     return res.status(400).json({ error: "Заполните обязательные поля: название, цену и категорию" });
   }
 
   try {
     const inserted = await queryDB(
-      `INSERT INTO services (name, description, duration, price, category_id, image)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
+      `INSERT INTO services (name, description, duration, price, category_id, image, discount_percent)
+       VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *`,
       [
         name.trim(),
         description ? description.trim() : "",
@@ -515,6 +516,7 @@ app.post("/api/services", adminMiddleware, async (req, res) => {
         Number(price),
         Number(category_id),
         image?.trim() || "https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=80",
+        Number(discount_percent) || 0,
       ]
     );
     res.status(201).json(inserted[0]);
@@ -526,7 +528,7 @@ app.post("/api/services", adminMiddleware, async (req, res) => {
 // Редактирование услуги (Администратор)
 app.put("/api/services/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { name, description, duration, price, category_id, image } = req.body;
+  const { name, description, duration, price, category_id, image, discount_percent } = req.body;
   if (!name?.trim() || !price || !category_id) {
     return res.status(400).json({ error: "Заполните название, цену и категорию" });
   }
@@ -534,11 +536,34 @@ app.put("/api/services/:id", adminMiddleware, async (req, res) => {
   try {
     await queryDB(
       `UPDATE services
-       SET name = ?, description = ?, duration = ?, price = ?, category_id = ?, image = ?
+       SET name = ?, description = ?, duration = ?, price = ?, category_id = ?, image = ?, discount_percent = ?
        WHERE service_id = ?`,
-      [name.trim(), description || "", Number(duration) || 120, Number(price), Number(category_id), image || "", id]
+      [
+        name.trim(),
+        description || "",
+        Number(duration) || 120,
+        Number(price),
+        Number(category_id),
+        image || "",
+        Number(discount_percent) || 0,
+        id,
+      ]
     );
     res.json({ success: true, message: "Услуга обновлена" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Быстрая установка скидки на услугу (Администратор)
+app.put("/api/services/:id/discount", adminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { discount_percent } = req.body;
+  const percent = Math.max(0, Math.min(90, Number(discount_percent) || 0));
+
+  try {
+    await queryDB("UPDATE services SET discount_percent = ? WHERE service_id = ?", [percent, id]);
+    res.json({ success: true, message: `Скидка ${percent}% успешно установлена`, discount_percent: percent });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -575,9 +600,10 @@ app.get("/api/cart", authMiddleware, async (req, res) => {
          s.description,
          s.duration,
          s.price,
+         COALESCE(s.discount_percent, 0) AS discount_percent,
          s.image,
          c.name AS category_name,
-         (ci.quantity * s.price) AS total_item_price
+         (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN ROUND(s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        JOIN categories c ON s.category_id = c.category_id
@@ -618,7 +644,8 @@ app.post("/api/cart", authMiddleware, async (req, res) => {
 
     // Возвращаем актуальную корзину через JOIN
     const updated = await queryDB(
-      `SELECT ci.*, s.name, s.price, s.image, c.name AS category_name, (ci.quantity * s.price) AS total_item_price
+      `SELECT ci.*, s.name, s.price, COALESCE(s.discount_percent, 0) AS discount_percent, s.image, c.name AS category_name,
+              (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN ROUND(s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        JOIN categories c ON s.category_id = c.category_id
@@ -648,7 +675,8 @@ app.put("/api/cart/:id", authMiddleware, async (req, res) => {
     }
 
     const updated = await queryDB(
-      `SELECT ci.*, s.name, s.price, s.image, c.name AS category_name, (ci.quantity * s.price) AS total_item_price
+      `SELECT ci.*, s.name, s.price, COALESCE(s.discount_percent, 0) AS discount_percent, s.image, c.name AS category_name,
+              (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN ROUND(s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        JOIN categories c ON s.category_id = c.category_id
@@ -714,7 +742,7 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
   try {
     // Получаем текущие позиции корзины пользователя через JOIN
     const cartItems = await queryDB(
-      `SELECT ci.*, s.name, s.price
+      `SELECT ci.*, s.name, s.price, COALESCE(s.discount_percent, 0) AS discount_percent
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        WHERE ci.user_id = ?`,
@@ -725,8 +753,11 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Ваша корзина пуста. Добавьте услуги перед оформлением заказа." });
     }
 
-    // Расчет итоговой суммы заказа
-    const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    // Расчет итоговой суммы заказа с учетом скидок на услуги
+    const totalAmount = cartItems.reduce((sum, item) => {
+      const effPrice = item.discount_percent > 0 ? Math.round(item.price * (1 - item.discount_percent / 100)) : item.price;
+      return sum + effPrice * item.quantity;
+    }, 0);
 
     // Создаем запись заказа в таблице orders
     const orderRes = await queryDB(
@@ -739,9 +770,10 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
 
     // Переносим позиции из корзины в order_items
     for (const item of cartItems) {
+      const finalItemPrice = item.discount_percent > 0 ? Math.round(item.price * (1 - item.discount_percent / 100)) : item.price;
       await queryDB(
         "INSERT INTO order_items (order_id, service_id, quantity, price) VALUES (?, ?, ?, ?)",
-        [orderId, item.service_id, item.quantity, item.price]
+        [orderId, item.service_id, item.quantity, finalItemPrice]
       );
     }
 

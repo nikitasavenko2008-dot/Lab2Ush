@@ -39,6 +39,7 @@ function initDB() {
       price REAL NOT NULL,
       category_id INTEGER,
       image TEXT,
+      discount_percent INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (category_id) REFERENCES categories(category_id)
     );
@@ -95,6 +96,12 @@ function initDB() {
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  try {
+    DB.exec("ALTER TABLE services ADD COLUMN discount_percent INTEGER DEFAULT 0");
+  } catch (e) {
+    // Колонка уже существует
+  }
 }
 
 // Начальное наполнение данными

@@ -390,8 +390,128 @@ body.dark .order-amount-text {
   color: white;
 }
 
+.card-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.card-top-header h3 {
+  margin: 0;
+}
+
+.admin-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 280px;
+}
+
+.admin-search-box input {
+  width: 100%;
+  padding: 0.5rem 2rem 0.5rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.88rem;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+body.dark .admin-search-box input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.2rem;
+}
+
+.clear-search-btn:hover {
+  color: #ef4444;
+}
+
+.service-subtext {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+body.dark .service-subtext {
+  color: #94a3b8;
+}
+
+.price-col {
+  white-space: nowrap;
+}
+
+.final-price-col {
+  color: #2563eb;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+
+body.dark .final-price-col {
+  color: #60a5fa;
+}
+
+.discount-setter-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.discount-dropdown {
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+body.dark .discount-dropdown {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.discount-tag-badge {
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.empty-table-row {
+  text-align: center;
+  padding: 2rem !important;
+  color: #64748b;
+  font-style: italic;
+}
+
 @media (max-width: 768px) {
   .admin-form-grid {
     grid-template-columns: 1fr;
+  }
+  .card-top-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-search-box {
+    width: 100%;
   }
 }

@@ -47,6 +47,7 @@ CREATE TABLE services (
     price NUMERIC NOT NULL,
     category_id INT REFERENCES categories(category_id) ON DELETE SET NULL,
     image TEXT,
+    discount_percent INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

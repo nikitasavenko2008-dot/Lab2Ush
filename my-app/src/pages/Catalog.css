@@ -7,31 +7,33 @@
   gap: 1.5rem;
 }
 
-.catalog-hero-banner {
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
-  color: white;
-  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.25);
+.catalog-simple-header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
 }
 
-body.dark .catalog-hero-banner {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+body.dark .catalog-simple-header {
+  border-bottom-color: #334155;
 }
 
-.hero-content h2 {
-  font-size: 1.85rem;
-  margin: 0 0 0.5rem 0;
-  font-weight: 800;
-  letter-spacing: -0.02em;
+.catalog-simple-header h1 {
+  font-size: 1.65rem;
+  margin: 0 0 0.35rem 0;
+  color: #0f172a;
 }
 
-.hero-content p {
+body.dark .catalog-simple-header h1 {
+  color: #f8fafc;
+}
+
+.catalog-simple-header p {
+  color: #64748b;
   margin: 0;
-  font-size: 1.05rem;
-  opacity: 0.9;
-  max-width: 720px;
-  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+body.dark .catalog-simple-header p {
+  color: #94a3b8;
 }
 
 .catalog-layout {

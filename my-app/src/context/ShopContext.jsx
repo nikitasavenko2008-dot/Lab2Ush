@@ -165,11 +165,13 @@ export function ShopProvider({ children }) {
   // Подсчет общего количества позиций в корзине
   const cartCount = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
 
-  // Подсчет общей суммы корзины
-  const cartTotal = cart.reduce(
-    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
-    0
-  );
+  // Подсчет общей суммы корзины с учетом персональных скидок на услуги
+  const cartTotal = cart.reduce((sum, item) => {
+    const rawPrice = Number(item.price) || 0;
+    const discount = Number(item.discount_percent) || 0;
+    const effectiveUnitPrice = discount > 0 ? Math.round(rawPrice * (1 - discount / 100)) : rawPrice;
+    return sum + effectiveUnitPrice * (Number(item.quantity) || 1);
+  }, 0);
 
   return (
     <ShopContext.Provider

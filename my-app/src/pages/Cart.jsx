@@ -57,11 +57,13 @@ export default function Cart() {
     }
   };
 
-  // Расчет сумм
-  const subtotal = cart.reduce(
-    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
-    0
-  );
+  // Расчет сумм с учетом индивидуальных скидок на услуги
+  const subtotal = cart.reduce((sum, item) => {
+    const rawP = Number(item.price) || 0;
+    const disc = Number(item.discount_percent) || 0;
+    const effP = disc > 0 ? Math.round(rawP * (1 - disc / 100)) : rawP;
+    return sum + effP * (Number(item.quantity) || 1);
+  }, 0);
 
   const discountAmount = appliedPromo
     ? Math.round((subtotal * appliedPromo.discountPercent) / 100)
@@ -225,9 +227,12 @@ export default function Cart() {
 
               <div className="cart-items-list">
                 {cart.map((item) => {
-                  const itemPrice = Number(item.price) || 0;
+                  const rawPrice = Number(item.price) || 0;
+                  const discountPercent = Number(item.discount_percent) || 0;
+                  const effectiveUnitPrice =
+                    discountPercent > 0 ? Math.round(rawPrice * (1 - discountPercent / 100)) : rawPrice;
                   const itemQty = Number(item.quantity) || 1;
-                  const itemTotal = itemPrice * itemQty;
+                  const itemTotal = effectiveUnitPrice * itemQty;
 
                   return (
                     <div key={item.cart_item_id} className="cart-item-row">
@@ -246,7 +251,19 @@ export default function Cart() {
                         <div className="cart-item-meta">
                           <span>⏱ {item.duration} мин</span>
                           <span className="unit-price">
-                            {itemPrice.toLocaleString("ru-RU")} ₽ / позиция
+                            {discountPercent > 0 ? (
+                              <>
+                                <s style={{ color: "#94a3b8", marginRight: "5px" }}>
+                                  {rawPrice.toLocaleString("ru-RU")} ₽
+                                </s>
+                                <strong style={{ color: "#dc2626" }}>
+                                  {effectiveUnitPrice.toLocaleString("ru-RU")} ₽
+                                </strong>{" "}
+                                <span style={{ color: "#ef4444", fontWeight: "bold" }}>(-{discountPercent}%)</span>
+                              </>
+                            ) : (
+                              `${rawPrice.toLocaleString("ru-RU")} ₽ / позиция`
+                            )}
                           </span>
                         </div>
                       </div>

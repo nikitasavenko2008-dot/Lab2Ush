@@ -38,12 +38,20 @@ export default function ServiceCard({ service, onOpenReviews }) {
 
   const numRating = Number(service.avg_rating) || 0;
   const reviewsCount = Number(service.reviews_count) || 0;
+  const discountPercent = Number(service.discount_percent) || 0;
+  const hasDiscount = discountPercent > 0;
+  const finalPrice = hasDiscount
+    ? Math.round(Number(service.price) * (1 - discountPercent / 100))
+    : Number(service.price);
 
   return (
     <div className="service-card">
       <div className="card-image-wrap">
         <img src={imgUrl} alt={service.name} className="card-img" loading="lazy" />
         <span className="card-category-badge">{service.category_name}</span>
+        {hasDiscount && (
+          <span className="card-discount-badge">-{discountPercent}%</span>
+        )}
       </div>
 
       <div className="card-body">
@@ -61,8 +69,14 @@ export default function ServiceCard({ service, onOpenReviews }) {
 
         <div className="card-bottom-row">
           <div className="card-price-container">
-            <span className="price-label">Стоимость:</span>
-            <span className="card-price">{Number(service.price).toLocaleString("ru-RU")} ₽</span>
+            {hasDiscount ? (
+              <div className="price-discount-wrapper">
+                <span className="old-strikethrough-price">{Number(service.price).toLocaleString("ru-RU")} ₽</span>
+                <span className="card-price discounted-color">{finalPrice.toLocaleString("ru-RU")} ₽</span>
+              </div>
+            ) : (
+              <span className="card-price">{Number(service.price).toLocaleString("ru-RU")} ₽</span>
+            )}
           </div>
 
           <div className="card-actions">

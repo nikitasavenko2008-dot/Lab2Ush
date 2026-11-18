@@ -60,6 +60,39 @@ body.dark .card-image-wrap {
   border-radius: 20px;
 }
 
+.card-discount-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #ef4444;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+}
+
+.price-discount-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.old-strikethrough-price {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+  line-height: 1;
+}
+
+.discounted-color {
+  color: #dc2626 !important;
+}
+
+body.dark .discounted-color {
+  color: #f87171 !important;
+}
+
 .card-body {
   padding: 1.25rem;
   display: flex;
