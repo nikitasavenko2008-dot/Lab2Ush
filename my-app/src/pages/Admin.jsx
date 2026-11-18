@@ -8,9 +8,10 @@
  *    - Категории услуг (добавление, изменение названия, удаление)
  *    - Все заказы клиентов (просмотр контактов, адреса, даты и смена статусов)
  *    - Отзывы клиентов (модерация и удаление)
- *    - Пользователи (просмотр, изменение роли user/admin, удаление)
- * 2. Добавлен быстрый поиск по каждому разделу (по услугам, категориям, заказам, отзывам и пользователям).
- * 3. Добавлена возможность назначать и изменять скидки на любые услуги.
+ *    - Промокоды (добавление новых промокодов, скидок и удаление)
+ *    - Пользователи (просмотр, изменение роли user/admin, назначение персональной скидки, удаление)
+ * 2. Быстрый поиск по всем разделам (услуги, категории, заказы, отзывы, промокоды, пользователи).
+ * 3. Установка скидок на услуги и назначение персональной скидки конкретному пользователю.
  */
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,7 @@ export default function Admin() {
   const { auth } = useShop();
   const navigate = useNavigate();
 
-  // Активная вкладка: "services" | "categories" | "orders" | "reviews" | "users"
+  // Активная вкладка: "services" | "categories" | "orders" | "reviews" | "coupons" | "users"
   const [activeTab, setActiveTab] = useState("services");
 
   // Состояние загрузки и общих сообщений
@@ -37,6 +38,7 @@ export default function Admin() {
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [users, setUsers] = useState([]);
 
   // Строки поиска для каждого раздела
@@ -44,6 +46,7 @@ export default function Admin() {
   const [searchCategory, setSearchCategory] = useState("");
   const [searchOrder, setSearchOrder] = useState("");
   const [searchReview, setSearchReview] = useState("");
+  const [searchCoupon, setSearchCoupon] = useState("");
   const [searchUser, setSearchUser] = useState("");
 
   // Форма добавления/редактирования услуги
@@ -63,6 +66,13 @@ export default function Admin() {
   const [editingCatId, setEditingCatId] = useState(null);
   const [editingCatName, setEditingCatName] = useState("");
 
+  // Форма промокода
+  const [couponForm, setCouponForm] = useState({
+    code: "",
+    discount_percent: 10,
+    description: "",
+  });
+
   // Загрузка всех данных панели администратора
   const loadAdminData = useCallback(async () => {
     if (!auth.token || auth.user?.role !== "admin") {
@@ -73,11 +83,12 @@ export default function Admin() {
     setLoading(true);
     setError(null);
     try {
-      const [svcs, cats, ords, revs, usrs] = await Promise.all([
+      const [svcs, cats, ords, revs, cpns, usrs] = await Promise.all([
         apiGet("/api/services"),
         apiGet("/api/categories"),
         apiGet("/api/orders", auth.token),
         apiGet("/api/reviews"),
+        apiGet("/api/coupons"),
         apiGet("/api/users", auth.token),
       ]);
 
@@ -85,6 +96,7 @@ export default function Admin() {
       setCategories(Array.isArray(cats) ? cats : []);
       setOrders(Array.isArray(ords) ? ords : []);
       setReviews(Array.isArray(revs) ? revs : []);
+      setCoupons(Array.isArray(cpns) ? cpns : []);
       setUsers(Array.isArray(usrs) ? usrs : []);
 
       if (cats.length > 0 && !serviceForm.category_id) {
@@ -170,7 +182,6 @@ export default function Admin() {
     }
   };
 
-  // Быстрая смена скидки на услугу (0%, 10%, 20%, 30%, 50% или произвольная)
   const handleSetServiceDiscount = async (serviceId, percent) => {
     const validPercent = Math.max(0, Math.min(90, Number(percent) || 0));
     try {
@@ -254,7 +265,46 @@ export default function Admin() {
   };
 
   // ==========================================
-  // УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
+  // УПРАВЛЕНИЕ ПРОМОКОДАМИ (КУПОНАМИ)
+  // ==========================================
+
+  const handleAddCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponForm.code.trim()) {
+      alert("Введите код промокода");
+      return;
+    }
+    try {
+      const added = await apiPost(
+        "/api/coupons",
+        {
+          code: couponForm.code.trim().toUpperCase(),
+          discount_percent: Number(couponForm.discount_percent) || 10,
+          description: couponForm.description.trim(),
+        },
+        auth.token
+      );
+      setCoupons([added, ...coupons]);
+      setCouponForm({ code: "", discount_percent: 10, description: "" });
+      showSuccess(`Промокод ${added.code} (${added.discount_percent}%) успешно добавлен`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteCoupon = async (couponId, code) => {
+    if (!window.confirm(`Удалить промокод «${code}»?`)) return;
+    try {
+      await apiDelete(`/api/coupons/${couponId}`, auth.token);
+      setCoupons(coupons.filter((c) => c.coupon_id !== couponId));
+      showSuccess(`Промокод «${code}» удален`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // ==========================================
+  // УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ И ЛИЧНЫМИ СКИДКАМИ
   // ==========================================
 
   const handleChangeUserRole = async (userId, newRoleId) => {
@@ -266,6 +316,26 @@ export default function Admin() {
         )
       );
       showSuccess("Роль пользователя обновлена");
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // Назначение персональной скидки пользователю
+  const handleUpdateUserPersonalDiscount = async (userId, userName, percent) => {
+    const validPercent = Math.max(0, Math.min(90, Number(percent) || 0));
+    try {
+      await apiPut(
+        `/api/users/${userId}/personal-discount`,
+        { personal_discount_percent: validPercent },
+        auth.token
+      );
+      setUsers(
+        users.map((u) =>
+          u.user_id === userId ? { ...u, personal_discount_percent: validPercent } : u
+        )
+      );
+      showSuccess(`Личная скидка ${validPercent}% назначена пользователю «${userName}»`);
     } catch (err) {
       alert(err.message);
     }
@@ -327,6 +397,12 @@ export default function Admin() {
     );
   });
 
+  const filteredCoupons = coupons.filter((c) => {
+    if (!searchCoupon.trim()) return true;
+    const term = searchCoupon.toLowerCase();
+    return c.code?.toLowerCase().includes(term) || c.description?.toLowerCase().includes(term);
+  });
+
   const filteredUsers = users.filter((u) => {
     if (!searchUser.trim()) return true;
     const term = searchUser.toLowerCase();
@@ -344,7 +420,7 @@ export default function Admin() {
         <div>
           <h1>Панель администратора</h1>
           <p className="admin-subtitle">
-            Управление каталогом услуг, скидками, категориями, заказами клиентов, отзывами и ролями
+            Управление каталогом услуг, промокодами, личными скидками клиентов, категориями, заказами и отзывами
           </p>
         </div>
       </div>
@@ -365,6 +441,12 @@ export default function Admin() {
           onClick={() => setActiveTab("categories")}
         >
           🏷️ Категории ({categories.length})
+        </button>
+        <button
+          className={`admin-tab-btn ${activeTab === "coupons" ? "active" : ""}`}
+          onClick={() => setActiveTab("coupons")}
+        >
+          🎟️ Промокоды ({coupons.length})
         </button>
         <button
           className={`admin-tab-btn ${activeTab === "orders" ? "active" : ""}`}
@@ -721,7 +803,124 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ВКЛАДКА 3: ВСЕ ЗАКАЗЫ */}
+          {/* ВКЛАДКА 3: ПРОМОКОДЫ (КУПОНЫ) */}
+          {activeTab === "coupons" && (
+            <div className="admin-section">
+              <div className="admin-card form-card">
+                <h3>Добавить новый промокод</h3>
+                <form onSubmit={handleAddCoupon} className="admin-form-grid">
+                  <div className="form-group">
+                    <label>Код промокода *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Например: VIP20 или SUMMER15"
+                      value={couponForm.code}
+                      onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Скидка по промокоду (%) *</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="90"
+                      placeholder="15"
+                      value={couponForm.discount_percent}
+                      onChange={(e) =>
+                        setCouponForm({ ...couponForm, discount_percent: Number(e.target.value) || 10 })
+                      }
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label>Описание промокода</label>
+                    <input
+                      type="text"
+                      placeholder="Например: Праздничная скидка на банкеты"
+                      value={couponForm.description}
+                      onChange={(e) => setCouponForm({ ...couponForm, description: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-actions-row full-width">
+                    <button type="submit" className="admin-primary-btn">
+                      + Создать промокод
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              <div className="admin-card table-card">
+                <div className="card-top-header">
+                  <h3>Список действующих промокодов ({filteredCoupons.length})</h3>
+                  <div className="admin-search-box">
+                    <input
+                      type="text"
+                      placeholder="🔍 Поиск промокода..."
+                      value={searchCoupon}
+                      onChange={(e) => setSearchCoupon(e.target.value)}
+                    />
+                    {searchCoupon && (
+                      <button className="clear-search-btn" onClick={() => setSearchCoupon("")}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="admin-table-wrap">
+                  <table className="admin-data-table">
+                    <thead>
+                      <tr>
+                        <th>Код</th>
+                        <th>Скидка</th>
+                        <th>Описание</th>
+                        <th>Статус</th>
+                        <th>Действие</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCoupons.map((c) => (
+                        <tr key={c.coupon_id}>
+                          <td>
+                            <strong className="coupon-code-chip">{c.code}</strong>
+                          </td>
+                          <td>
+                            <span className="discount-tag-badge">-{c.discount_percent}%</span>
+                          </td>
+                          <td>{c.description || "—"}</td>
+                          <td>
+                            <span className="status-badge status-completed">Активен</span>
+                          </td>
+                          <td>
+                            <button
+                              className="action-delete-btn"
+                              onClick={() => handleDeleteCoupon(c.coupon_id, c.code)}
+                              title="Удалить промокод"
+                            >
+                              🗑
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredCoupons.length === 0 && (
+                        <tr>
+                          <td colSpan="5" className="empty-table-row">
+                            Промокодов по запросу «{searchCoupon}» не найдено
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ВКЛАДКА 4: ВСЕ ЗАКАЗЫ */}
           {activeTab === "orders" && (
             <div className="admin-section">
               <div className="admin-card table-card">
@@ -810,7 +1009,7 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ВКЛАДКА 4: ОТЗЫВЫ */}
+          {/* ВКЛАДКА 5: ОТЗЫВЫ */}
           {activeTab === "reviews" && (
             <div className="admin-section">
               <div className="admin-card table-card">
@@ -876,7 +1075,7 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ВКЛАДКА 5: ПОЛЬЗОВАТЕЛИ */}
+          {/* ВКЛАДКА 6: ПОЛЬЗОВАТЕЛИ И ЛИЧНЫЕ СКИДКИ */}
           {activeTab === "users" && (
             <div className="admin-section">
               <div className="admin-card table-card">
@@ -904,42 +1103,70 @@ export default function Admin() {
                         <th>ФИО</th>
                         <th>Email</th>
                         <th>Телефон</th>
-                        <th>Адрес по умолчанию</th>
                         <th>Роль</th>
+                        <th>Личная скидка клиента</th>
                         <th>Действие</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredUsers.map((u) => (
-                        <tr key={u.user_id}>
-                          <td><strong>{u.name}</strong></td>
-                          <td>{u.email}</td>
-                          <td>{u.phone}</td>
-                          <td>{u.address || "—"}</td>
-                          <td>
-                            <select
-                              value={u.role_id}
-                              onChange={(e) => handleChangeUserRole(u.user_id, Number(e.target.value))}
-                              className="role-select"
-                              disabled={u.user_id === auth.user.user_id}
-                            >
-                              <option value="2">Пользователь (Клиент)</option>
-                              <option value="1">Администратор</option>
-                            </select>
-                          </td>
-                          <td>
-                            {u.user_id !== auth.user.user_id && (
-                              <button
-                                className="action-delete-btn"
-                                onClick={() => handleDeleteUser(u.user_id, u.name)}
-                                title="Удалить пользователя"
+                      {filteredUsers.map((u) => {
+                        const personalDisc = Number(u.personal_discount_percent) || 0;
+
+                        return (
+                          <tr key={u.user_id}>
+                            <td><strong>{u.name}</strong></td>
+                            <td>{u.email}</td>
+                            <td>{u.phone}</td>
+                            <td>
+                              <select
+                                value={u.role_id}
+                                onChange={(e) => handleChangeUserRole(u.user_id, Number(e.target.value))}
+                                className="role-select"
+                                disabled={u.user_id === auth.user.user_id}
                               >
-                                🗑
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                                <option value="2">Пользователь (Клиент)</option>
+                                <option value="1">Администратор</option>
+                              </select>
+                            </td>
+                            <td>
+                              <div className="discount-setter-inline">
+                                <select
+                                  value={personalDisc}
+                                  onChange={(e) =>
+                                    handleUpdateUserPersonalDiscount(u.user_id, u.name, e.target.value)
+                                  }
+                                  className="discount-dropdown"
+                                  disabled={u.role === "admin"}
+                                >
+                                  <option value="0">0% (Без скидки)</option>
+                                  <option value="5">5% скидка</option>
+                                  <option value="10">10% скидка</option>
+                                  <option value="15">15% скидка</option>
+                                  <option value="20">20% скидка</option>
+                                  <option value="25">25% скидка</option>
+                                  <option value="30">30% скидка</option>
+                                </select>
+                                {personalDisc > 0 && (
+                                  <span className="personal-disc-chip">
+                                    ★ {personalDisc}%
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              {u.user_id !== auth.user.user_id && (
+                                <button
+                                  className="action-delete-btn"
+                                  onClick={() => handleDeleteUser(u.user_id, u.name)}
+                                  title="Удалить пользователя"
+                                >
+                                  🗑
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {filteredUsers.length === 0 && (
                         <tr>
                           <td colSpan="6" className="empty-table-row">

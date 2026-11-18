@@ -35,8 +35,25 @@ CREATE TABLE users (
     phone VARCHAR(50) NOT NULL,
     address TEXT DEFAULT '',
     role_id INT REFERENCES roles(role_id) DEFAULT 2,
+    personal_discount_percent INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 3.1 Таблица промокодов (купонов)
+CREATE TABLE IF NOT EXISTS coupons (
+    coupon_id SERIAL PRIMARY KEY,
+    code VARCHAR(50) NOT NULL UNIQUE,
+    discount_percent INT NOT NULL DEFAULT 10,
+    description VARCHAR(255) DEFAULT '',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO coupons (code, discount_percent, description) VALUES
+('VIP10', 10, 'Скидка постоянного клиента'),
+('WELCOME15', 15, 'Скидка на первый заказ банкета'),
+('FESTIVAL20', 20, 'Праздничный промокод')
+ON CONFLICT (code) DO NOTHING;
 
 -- 4. Таблица услуг ресторана / кейтеринга
 CREATE TABLE services (

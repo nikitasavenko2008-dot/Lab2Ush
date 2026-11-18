@@ -9,8 +9,27 @@ async function handleResponse(res) {
     if (res.status === 502 || res.status === 503 || res.status === 504 || res.statusText === "Bad Gateway") {
       throw new Error("Сервер выключен");
     }
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    if (err.error === "Bad Gateway" || err.error?.includes("ECONNREFUSED")) {
+    let text = "";
+    try {
+      text = await res.text();
+    } catch (_) {}
+
+    if (text.includes("Bad Gateway") || text.includes("ECONNREFUSED") || res.statusText?.includes("Bad Gateway")) {
+      throw new Error("Сервер выключен");
+    }
+
+    let err = {};
+    try {
+      err = JSON.parse(text);
+    } catch (_) {
+      err = { error: text || res.statusText };
+    }
+
+    if (
+      err.error === "Bad Gateway" ||
+      String(err.error).includes("Bad Gateway") ||
+      String(err.error).includes("ECONNREFUSED")
+    ) {
       throw new Error("Сервер выключен");
     }
     throw new Error(err.error || res.statusText || "Произошла ошибка при обращении к серверу");
@@ -19,11 +38,15 @@ async function handleResponse(res) {
 }
 
 function handleNetworkError(err) {
+  const msg = String(err?.message || "");
   if (
-    err.message === "Failed to fetch" ||
-    err.message?.includes("NetworkError") ||
-    err.message?.includes("Failed to load") ||
-    err.message === "Bad Gateway"
+    msg === "Failed to fetch" ||
+    msg.includes("Failed to fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("Failed to load") ||
+    msg.includes("Bad Gateway") ||
+    msg.includes("ECONNREFUSED") ||
+    msg.includes("Load failed")
   ) {
     return new Error("Сервер выключен");
   }

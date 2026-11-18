@@ -178,7 +178,7 @@ app.post("/api/auth/login", async (req, res) => {
 
   try {
     const rows = await queryDB(
-      `SELECT u.user_id, u.name, u.email, u.password, u.phone, u.address, r.name AS role
+      `SELECT u.user_id, u.name, u.email, u.password, u.phone, u.address, COALESCE(u.personal_discount_percent, 0) AS personal_discount_percent, r.name AS role
        FROM users u
        JOIN roles r ON u.role_id = r.role_id
        WHERE LOWER(u.email) = LOWER(?)`,
@@ -195,6 +195,7 @@ app.post("/api/auth/login", async (req, res) => {
       email: rows[0].email,
       phone: rows[0].phone,
       address: rows[0].address || "",
+      personal_discount_percent: Number(rows[0].personal_discount_percent) || 0,
       role: rows[0].role,
     };
 
@@ -209,7 +210,7 @@ app.post("/api/auth/login", async (req, res) => {
 app.get("/api/auth/me", authMiddleware, async (req, res) => {
   try {
     const rows = await queryDB(
-      `SELECT u.user_id, u.name, u.email, u.phone, u.address, r.name AS role
+      `SELECT u.user_id, u.name, u.email, u.phone, u.address, COALESCE(u.personal_discount_percent, 0) AS personal_discount_percent, r.name AS role
        FROM users u
        JOIN roles r ON u.role_id = r.role_id
        WHERE u.user_id = ?`,
@@ -248,7 +249,7 @@ app.put("/api/auth/profile", authMiddleware, async (req, res) => {
     );
 
     const rows = await queryDB(
-      `SELECT u.user_id, u.name, u.email, u.phone, u.address, r.name AS role
+      `SELECT u.user_id, u.name, u.email, u.phone, u.address, COALESCE(u.personal_discount_percent, 0) AS personal_discount_percent, r.name AS role
        FROM users u
        JOIN roles r ON u.role_id = r.role_id
        WHERE u.user_id = ?`,
@@ -957,12 +958,119 @@ app.delete("/api/reviews/:id", adminMiddleware, async (req, res) => {
 app.get("/api/users", adminMiddleware, async (req, res) => {
   try {
     const rows = await queryDB(
-      `SELECT u.user_id, u.name, u.email, u.phone, u.address, u.created_at, r.name AS role, u.role_id
+      `SELECT u.user_id, u.name, u.email, u.phone, u.address, u.created_at, COALESCE(u.personal_discount_percent, 0) AS personal_discount_percent, r.name AS role, u.role_id
        FROM users u
        JOIN roles r ON u.role_id = r.role_id
        ORDER BY u.user_id ASC`
     );
     res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Назначение личной скидки пользователю (Администратор)
+app.put("/api/users/:id/personal-discount", adminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { personal_discount_percent } = req.body;
+  const percent = Math.max(0, Math.min(90, Number(personal_discount_percent) || 0));
+
+  try {
+    await queryDB("UPDATE users SET personal_discount_percent = ? WHERE user_id = ?", [percent, id]);
+    res.json({
+      success: true,
+      message: `Личная скидка ${percent}% успешно установлена`,
+      personal_discount_percent: percent,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ====================================================
+// МАРШРУТЫ ПРОМОКОДОВ / КУПОНОВ (Лаб 4)
+// ====================================================
+
+// Получение списка всех промокодов
+app.get("/api/coupons", async (req, res) => {
+  try {
+    const rows = await queryDB("SELECT * FROM coupons ORDER BY coupon_id DESC");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Проверка и применение промокода клиентом
+app.get("/api/coupons/check/:code", async (req, res) => {
+  const { code } = req.params;
+  if (!code?.trim()) {
+    return res.status(400).json({ error: "Введите промокод" });
+  }
+  try {
+    const rows = await queryDB(
+      "SELECT * FROM coupons WHERE UPPER(code) = UPPER(?) AND (is_active = TRUE OR is_active = 1)",
+      [code.trim()]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Промокод не найден или срок его действия истек" });
+    }
+    res.json({ valid: true, coupon: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Добавление нового промокода (Администратор)
+app.post("/api/coupons", adminMiddleware, async (req, res) => {
+  const { code, discount_percent, description } = req.body;
+  if (!code?.trim()) {
+    return res.status(400).json({ error: "Укажите код промокода (например VIP10)" });
+  }
+  const percent = Math.max(1, Math.min(90, Number(discount_percent) || 10));
+
+  try {
+    const existing = await queryDB("SELECT * FROM coupons WHERE UPPER(code) = UPPER(?)", [code.trim()]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: "Промокод с таким названием уже существует" });
+    }
+
+    const inserted = await queryDB(
+      "INSERT INTO coupons (code, discount_percent, description, is_active) VALUES (?, ?, ?, TRUE) RETURNING *",
+      [code.trim().toUpperCase(), percent, description?.trim() || ""]
+    );
+    res.status(201).json(inserted[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Изменение скидки / активности промокода (Администратор)
+app.put("/api/coupons/:id", adminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { discount_percent, description, is_active } = req.body;
+  try {
+    await queryDB(
+      "UPDATE coupons SET discount_percent = COALESCE(?, discount_percent), description = COALESCE(?, description), is_active = COALESCE(?, is_active) WHERE coupon_id = ?",
+      [
+        discount_percent !== undefined ? Number(discount_percent) : null,
+        description !== undefined ? description : null,
+        is_active !== undefined ? is_active : null,
+        id,
+      ]
+    );
+    res.json({ success: true, message: "Промокод успешно обновлен" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Удаление промокода (Администратор)
+app.delete("/api/coupons/:id", adminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await queryDB("DELETE FROM coupons WHERE coupon_id = ?", [id]);
+    res.json({ success: true, message: "Промокод удален" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -496,6 +496,39 @@ body.dark .discount-dropdown {
   border-radius: 4px;
 }
 
+.coupon-code-chip {
+  background: #f1f5f9;
+  border: 1px dashed #2563eb;
+  color: #1e40af;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.95rem;
+}
+
+body.dark .coupon-code-chip {
+  background: #1e3a8a33;
+  color: #93c5fd;
+  border-color: #3b82f6;
+}
+
+.personal-disc-chip {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+body.dark .personal-disc-chip {
+  background: #78350f33;
+  color: #fde68a;
+  border-color: #92400e;
+}
+
 .empty-table-row {
   text-align: center;
   padding: 2rem !important;

@@ -84,6 +84,22 @@ body.dark .role-chip {
   color: #e2e8f0;
 }
 
+.personal-disc-chip {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+body.dark .personal-disc-chip {
+  background: #78350f33;
+  color: #fde68a;
+  border-color: #92400e;
+}
+
 .header-actions {
   display: flex;
   align-items: center;

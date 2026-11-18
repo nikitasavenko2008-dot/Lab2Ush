@@ -241,6 +241,32 @@ body.dark .cart-item-total {
   font-size: 0.95rem;
 }
 
+.personal-discount-active-box {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  margin-bottom: 0.85rem;
+}
+
+body.dark .personal-discount-active-box {
+  background: #78350f33;
+  color: #fde68a;
+  border-color: #92400e;
+}
+
+.personal-disc-sub {
+  font-size: 0.75rem;
+  color: #b45309;
+  margin-top: 0.2rem;
+}
+
+body.dark .personal-disc-sub {
+  color: #cbd5e1;
+}
+
 .promo-form {
   display: flex;
   gap: 0.5rem;

@@ -27,6 +27,7 @@ function initDB() {
       phone TEXT NOT NULL,
       address TEXT DEFAULT '',
       role_id INTEGER DEFAULT 2,
+      personal_discount_percent INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (role_id) REFERENCES roles(role_id)
     );
@@ -95,6 +96,15 @@ function initDB() {
       code TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS coupons (
+      coupon_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      discount_percent INTEGER NOT NULL DEFAULT 10,
+      description TEXT DEFAULT '',
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 
   try {
@@ -102,6 +112,22 @@ function initDB() {
   } catch (e) {
     // Колонка уже существует
   }
+
+  try {
+    DB.exec("ALTER TABLE users ADD COLUMN personal_discount_percent INTEGER DEFAULT 0");
+  } catch (e) {
+    // Колонка уже существует
+  }
+
+  try {
+    const couponCount = DB.prepare("SELECT COUNT(*) AS c FROM coupons").get().c;
+    if (couponCount === 0) {
+      const insCpn = DB.prepare("INSERT INTO coupons (code, discount_percent, description) VALUES (?, ?, ?)");
+      insCpn.run("VIP10", 10, "Скидка постоянного клиента");
+      insCpn.run("WELCOME15", 15, "Скидка на первый заказ банкета");
+      insCpn.run("FESTIVAL20", 20, "Праздничный промокод");
+    }
+  } catch (e) {}
 }
 
 // Начальное наполнение данными

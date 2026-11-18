@@ -204,6 +204,11 @@ export default function Dashboard() {
               <span className="role-chip">
                 {auth.user?.role === "admin" ? "👑 Администратор" : "Клиент"}
               </span>
+              {Number(auth.user?.personal_discount_percent) > 0 && (
+                <span className="personal-disc-chip">
+                  🎟 Ваша персональная скидка: {auth.user.personal_discount_percent}%
+                </span>
+              )}
             </p>
           </div>
         </div>

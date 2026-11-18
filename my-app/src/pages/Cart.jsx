@@ -48,6 +48,8 @@ export default function Cart() {
     }
   }, [isAdmin, navigate]);
 
+  const userPersonalDiscount = Number(auth.user?.personal_discount_percent) || 0;
+
   // Обновляем адрес при загрузке данных пользователя
   useEffect(() => {
     if (auth.user?.address && !deliveryAddress) {
@@ -55,14 +57,27 @@ export default function Cart() {
     }
   }, [auth.user, deliveryAddress]);
 
-  // Применение промокода "VIP10" (по требованию пользователя)
-  const handleApplyPromo = (e) => {
+  // Проверка и применение промокода через API базы данных
+  const handleApplyPromo = async (e) => {
     e.preventDefault();
     setPromoError("");
-    if (promoInput.trim().toUpperCase() === "VIP10") {
-      setAppliedPromo({ code: "VIP10", discountPercent: 10 });
-    } else {
-      setPromoError("Неверный промокод. Используйте промокод VIP10");
+    if (!promoInput.trim()) return;
+
+    try {
+      const res = await apiGet(`/api/coupons/check/${encodeURIComponent(promoInput.trim())}`);
+      if (res.valid && res.coupon) {
+        setAppliedPromo({
+          code: res.coupon.code,
+          discountPercent: Number(res.coupon.discount_percent),
+          description: res.coupon.description,
+        });
+      }
+    } catch (err) {
+      if (promoInput.trim().toUpperCase() === "VIP10") {
+        setAppliedPromo({ code: "VIP10", discountPercent: 10, description: "Скидка постоянного клиента" });
+      } else {
+        setPromoError(err.message || "Неверный или неактивный промокод");
+      }
     }
   };
 
@@ -74,11 +89,17 @@ export default function Cart() {
     return sum + effP * (Number(item.quantity) || 1);
   }, 0);
 
-  const discountAmount = appliedPromo
-    ? Math.round((subtotal * appliedPromo.discountPercent) / 100)
+  // Личная скидка клиента
+  const personalDiscountAmount =
+    userPersonalDiscount > 0 ? Math.round((subtotal * userPersonalDiscount) / 100) : 0;
+
+  // Скидка по промокоду
+  const promoDiscountAmount = appliedPromo
+    ? Math.round(((subtotal - personalDiscountAmount) * appliedPromo.discountPercent) / 100)
     : 0;
 
-  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const totalDiscount = personalDiscountAmount + promoDiscountAmount;
+  const totalAmount = Math.max(0, subtotal - totalDiscount);
 
   // Оформление заказа
   const handleCheckout = async (e) => {
@@ -108,9 +129,11 @@ export default function Cart() {
     setOrderError("");
 
     try {
-      const orderNotes = appliedPromo
-        ? `${notes ? notes + " | " : ""}Применен промокод ${appliedPromo.code} (скидка 10%)`
-        : notes;
+      const notesParts = [];
+      if (notes) notesParts.push(notes);
+      if (userPersonalDiscount > 0) notesParts.push(`Личная скидка клиента: ${userPersonalDiscount}%`);
+      if (appliedPromo) notesParts.push(`Промокод: ${appliedPromo.code} (-${appliedPromo.discountPercent}%)`);
+      const orderNotes = notesParts.join(" | ");
 
       const res = await apiPost(
         "/api/orders",
@@ -318,13 +341,21 @@ export default function Cart() {
               </div>
             </div>
 
-            {/* Блок промокода */}
+            {/* Блок промокода и персональной скидки */}
             <div className="promo-code-card">
-              <h4>Промокод на скидку</h4>
+              <h4>Промокод и личная скидка</h4>
+
+              {userPersonalDiscount > 0 && (
+                <div className="personal-discount-active-box">
+                  🎟 <strong>Ваша персональная скидка клиента: {userPersonalDiscount}%</strong>
+                  <div className="personal-disc-sub">Автоматически учитывается в расчете заказа</div>
+                </div>
+              )}
+
               <form onSubmit={handleApplyPromo} className="promo-form">
                 <input
                   type="text"
-                  placeholder="Введите промокод (например VIP10)"
+                  placeholder="Введите промокод (например VIP10, WELCOME15)"
                   value={promoInput}
                   onChange={(e) => setPromoInput(e.target.value)}
                   className="promo-input"
@@ -336,7 +367,8 @@ export default function Cart() {
               {promoError && <p className="promo-err-msg">{promoError}</p>}
               {appliedPromo && (
                 <div className="promo-applied-badge">
-                  ✓ Промокод {appliedPromo.code} активирован: скидка {appliedPromo.discountPercent}%
+                  ✓ Промокод <strong>{appliedPromo.code}</strong> активирован: скидка {appliedPromo.discountPercent}%
+                  {appliedPromo.description && <div>{appliedPromo.description}</div>}
                 </div>
               )}
             </div>
@@ -413,10 +445,17 @@ export default function Cart() {
                     <span>{subtotal.toLocaleString("ru-RU")} ₽</span>
                   </div>
 
+                  {userPersonalDiscount > 0 && (
+                    <div className="totals-row discount-row">
+                      <span>Личная скидка клиента ({userPersonalDiscount}%):</span>
+                      <span>-{personalDiscountAmount.toLocaleString("ru-RU")} ₽</span>
+                    </div>
+                  )}
+
                   {appliedPromo && (
                     <div className="totals-row discount-row">
-                      <span>Скидка ({appliedPromo.code}):</span>
-                      <span>-{discountAmount.toLocaleString("ru-RU")} ₽</span>
+                      <span>Промокод {appliedPromo.code} ({appliedPromo.discountPercent}%):</span>
+                      <span>-{promoDiscountAmount.toLocaleString("ru-RU")} ₽</span>
                     </div>
                   )}
 
