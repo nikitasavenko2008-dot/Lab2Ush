@@ -16,6 +16,8 @@ export default function ServiceCard({ service, onOpenReviews }) {
   const [addedNotice, setAddedNotice] = useState(false);
   const [errorNotice, setErrorNotice] = useState(null);
 
+  const isAdmin = auth.user?.role === "admin";
+
   const handleAddToCart = async () => {
     if (!auth.token) {
       navigate("/login");
@@ -89,13 +91,15 @@ export default function ServiceCard({ service, onOpenReviews }) {
               💬 Отзывы
             </button>
 
-            <button
-              type="button"
-              className={`card-add-btn ${addedNotice ? "success" : ""}`}
-              onClick={handleAddToCart}
-            >
-              {addedNotice ? "✓ В корзине" : "+ В корзину"}
-            </button>
+            {!isAdmin && (
+              <button
+                type="button"
+                className={`card-add-btn ${addedNotice ? "success" : ""}`}
+                onClick={handleAddToCart}
+              >
+                {addedNotice ? "✓ В корзине" : "+ В корзину"}
+              </button>
+            )}
           </div>
         </div>
 

@@ -39,6 +39,15 @@ export default function Cart() {
   const [orderError, setOrderError] = useState("");
   const [createdOrder, setCreatedOrder] = useState(null);
 
+  const isAdmin = auth.user?.role === "admin";
+
+  // Если зашел администратор — перенаправляем в панель управления (у администратора нет корзины)
+  useEffect(() => {
+    if (isAdmin) {
+      navigate("/admin");
+    }
+  }, [isAdmin, navigate]);
+
   // Обновляем адрес при загрузке данных пользователя
   useEffect(() => {
     if (auth.user?.address && !deliveryAddress) {
@@ -122,6 +131,10 @@ export default function Cart() {
       setSubmitting(false);
     }
   };
+
+  if (isAdmin) {
+    return null;
+  }
 
   if (!auth.token) {
     return (

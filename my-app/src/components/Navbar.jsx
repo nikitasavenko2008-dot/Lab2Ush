@@ -28,10 +28,12 @@ export default function Navbar() {
             Каталог
           </NavLink>
 
-          <NavLink to="/cart" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Корзина
-            {cartCount > 0 && <span className="nav-badge">{cartCount}</span>}
-          </NavLink>
+          {!isAdmin && (
+            <NavLink to="/cart" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+              Корзина
+              {cartCount > 0 && <span className="nav-badge">{cartCount}</span>}
+            </NavLink>
+          )}
 
           {auth.user && (
             <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
