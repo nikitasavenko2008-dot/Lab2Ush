@@ -1,61 +1,91 @@
+/**
+ * Карточка услуги каталога «Royal Catering»
+ * Лабораторная работа №4 — Студент: Никита Савенко
+ * 
+ * Отображает название, описание, категорию (через SQL JOIN), длительность, цену,
+ * средний рейтинг и кнопку вызова модального окна отзывов.
+ */
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import "./ServiceCard.css";
 
-const fallbackImages = {
-  1: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&auto=format&fit=crop&q=80",
-  2: "https://images.unsplash.com/photo-1632345031435-8727f6897d53?w=500&auto=format&fit=crop&q=80",
-  3: "https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=500&auto=format&fit=crop&q=80",
-  4: "https://images.unsplash.com/photo-1560869713-7d0a29430803?w=500&auto=format&fit=crop&q=80",
-  5: "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=500&auto=format&fit=crop&q=80",
-  6: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=500&auto=format&fit=crop&q=80",
-  7: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?w=500&auto=format&fit=crop&q=80",
-  8: "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=500&auto=format&fit=crop&q=80",
-  9: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=500&auto=format&fit=crop&q=80",
-  10: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?w=500&auto=format&fit=crop&q=80",
-};
-
-export default function ServiceCard({ service }) {
+export default function ServiceCard({ service, onOpenReviews }) {
   const { addToCart, auth } = useShop();
-  const isAdmin = auth.user?.role === "admin";
+  const navigate = useNavigate();
+  const [addedNotice, setAddedNotice] = useState(false);
+  const [errorNotice, setErrorNotice] = useState(null);
 
-  const hasDiscount = service.discount_percent > 0;
-  const finalPrice = hasDiscount
-    ? Math.round(service.price * (1 - service.discount_percent / 100))
-    : service.price;
+  const handleAddToCart = async () => {
+    if (!auth.token) {
+      navigate("/login");
+      return;
+    }
 
-  const imgUrl = service.image || fallbackImages[service.service_id] || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=500&auto=format&fit=crop&q=80";
+    const res = await addToCart(service, 1);
+    if (res?.error) {
+      setErrorNotice(res.error);
+      setTimeout(() => setErrorNotice(null), 3000);
+    } else {
+      setAddedNotice(true);
+      setTimeout(() => setAddedNotice(false), 2000);
+    }
+  };
+
+  const imgUrl =
+    service.image ||
+    "https://images.unsplash.com/photo-1555244162-803834f70033?w=600&auto=format&fit=crop&q=80";
+
+  const numRating = Number(service.avg_rating) || 0;
+  const reviewsCount = Number(service.reviews_count) || 0;
 
   return (
     <div className="service-card">
       <div className="card-image-wrap">
         <img src={imgUrl} alt={service.name} className="card-img" loading="lazy" />
-        {hasDiscount && (
-          <span className="discount-badge">-{service.discount_percent}%</span>
-        )}
+        <span className="card-category-badge">{service.category_name}</span>
       </div>
 
       <div className="card-body">
-        <div className="card-cat">{service.category_name}</div>
-        <h3 className="card-title">{service.name}</h3>
-        <p className="card-desc">{service.description}</p>
-        <div className="card-duration">⏱ {service.duration} мин</div>
-
-        <div className="card-price-row">
-          {hasDiscount ? (
-            <>
-              <span className="old-price">{service.price} ₽</span>
-              <span className="new-price">{finalPrice} ₽</span>
-            </>
-          ) : (
-            <span className="regular-price">{service.price} ₽</span>
-          )}
+        <div className="card-header-info">
+          <div className="card-rating" onClick={onOpenReviews} title="Нажмите, чтобы прочитать отзывы">
+            <span className="star-icon">★</span>
+            <span className="rating-value">{numRating > 0 ? numRating.toFixed(1) : "—"}</span>
+            <span className="reviews-counter">({reviewsCount} отзывов)</span>
+          </div>
+          <span className="card-duration">⏱ {service.duration} мин</span>
         </div>
 
-        {!isAdmin && (
-          <button className="add-btn" onClick={() => addToCart(service)}>
-            В корзину
-          </button>
-        )}
+        <h3 className="card-title">{service.name}</h3>
+        <p className="card-desc">{service.description}</p>
+
+        <div className="card-bottom-row">
+          <div className="card-price-container">
+            <span className="price-label">Стоимость:</span>
+            <span className="card-price">{Number(service.price).toLocaleString("ru-RU")} ₽</span>
+          </div>
+
+          <div className="card-actions">
+            <button
+              type="button"
+              className="card-reviews-btn"
+              onClick={onOpenReviews}
+              title="Посмотреть отзывы"
+            >
+              💬 Отзывы
+            </button>
+
+            <button
+              type="button"
+              className={`card-add-btn ${addedNotice ? "success" : ""}`}
+              onClick={handleAddToCart}
+            >
+              {addedNotice ? "✓ В корзине" : "+ В корзину"}
+            </button>
+          </div>
+        </div>
+
+        {errorNotice && <div className="card-error-notice">{errorNotice}</div>}
       </div>
     </div>
   );

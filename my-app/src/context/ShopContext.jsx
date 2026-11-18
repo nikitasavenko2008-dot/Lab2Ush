@@ -1,17 +1,19 @@
-import { createContext, useContext, useState, useEffect } from "react";
+/**
+ * Контекст приложения «ShopContext»
+ * Управляет состоянием авторизации, серверной корзиной покупок и темой оформления.
+ * 
+ * В соответствии с требованиями лабораторной работы №4:
+ * 1. Корзина хранится на сервере в базе данных (cart_items).
+ * 2. Корзина уникальна для каждого пользователя и сохраняется при выходе из аккаунта.
+ * 3. Все изменения корзины синхронизируются через API (/api/cart).
+ */
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { apiGet, apiPost, apiPut, apiDelete } from "../api";
 
 const ShopContext = createContext();
 
 export function ShopProvider({ children }) {
-  const [cart, setCart] = useState(() => {
-    try {
-      const saved = localStorage.getItem("cart");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
+  // Состояние авторизации (токен и объект пользователя)
   const [auth, setAuth] = useState(() => {
     try {
       const saved = localStorage.getItem("auth");
@@ -21,6 +23,12 @@ export function ShopProvider({ children }) {
     }
   });
 
+  // Состояние серверной корзины пользователя
+  const [cart, setCart] = useState([]);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [cartError, setCartError] = useState(null);
+
+  // Тема оформления (светлая / темная)
   const [isDark, setIsDark] = useState(() => {
     try {
       return localStorage.getItem("theme") === "dark";
@@ -29,18 +37,7 @@ export function ShopProvider({ children }) {
     }
   });
 
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
-
-  useEffect(() => {
-    if (auth.token) {
-      localStorage.setItem("auth", JSON.stringify(auth));
-    } else {
-      localStorage.removeItem("auth");
-    }
-  }, [auth]);
-
+  // При изменении темы переключаем класс dark на теге <html> и <body>
   useEffect(() => {
     localStorage.setItem("theme", isDark ? "dark" : "light");
     if (isDark) {
@@ -54,47 +51,143 @@ export function ShopProvider({ children }) {
 
   const toggleTheme = () => setIsDark((prev) => !prev);
 
-  const addToCart = (service) => {
-    const exists = cart.find((i) => i.service_id === service.service_id);
-    if (exists) {
-      setCart(cart.map((i) => i.service_id === service.service_id ? { ...i, qty: (i.qty || 1) + 1 } : i));
+  // Загрузка серверной корзины при авторизации пользователя
+  const fetchCart = useCallback(async (token) => {
+    if (!token) {
+      setCart([]);
+      return;
+    }
+    setCartLoading(true);
+    setCartError(null);
+    try {
+      const data = await apiGet("/api/cart", token);
+      setCart(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setCartError(err.message);
+    } finally {
+      setCartLoading(false);
+    }
+  }, []);
+
+  // Синхронизация состояния авторизации с LocalStorage и загрузка корзины
+  useEffect(() => {
+    if (auth.token) {
+      localStorage.setItem("auth", JSON.stringify(auth));
+      fetchCart(auth.token);
     } else {
-      setCart([...cart, { ...service, qty: 1 }]);
+      localStorage.removeItem("auth");
+      setCart([]);
+    }
+  }, [auth, fetchCart]);
+
+  // Добавление услуги в серверную корзину
+  const addToCart = async (service, quantity = 1) => {
+    if (!auth.token) {
+      return { error: "Для добавления услуги в корзину необходимо войти в аккаунт" };
+    }
+    try {
+      const updatedCart = await apiPost(
+        "/api/cart",
+        { service_id: service.service_id, quantity },
+        auth.token
+      );
+      setCart(Array.isArray(updatedCart) ? updatedCart : []);
+      return { success: true };
+    } catch (err) {
+      return { error: err.message };
     }
   };
 
-  const removeFromCart = (serviceId) => {
-    setCart(cart.filter((i) => i.service_id !== serviceId));
+  // Изменение количества позиции в корзине
+  const updateQty = async (cartItemId, newQuantity) => {
+    if (!auth.token) return;
+    try {
+      if (newQuantity <= 0) {
+        await apiDelete(`/api/cart/${cartItemId}`, auth.token);
+        setCart((prev) => prev.filter((item) => item.cart_item_id !== cartItemId));
+      } else {
+        const updatedCart = await apiPut(
+          `/api/cart/${cartItemId}`,
+          { quantity: newQuantity },
+          auth.token
+        );
+        setCart(Array.isArray(updatedCart) ? updatedCart : []);
+      }
+    } catch (err) {
+      console.error("Ошибка при обновлении количества в корзине:", err.message);
+    }
   };
 
-  const updateQty = (serviceId, delta) => {
-    setCart((prev) =>
-      prev.map((i) => {
-        if (i.service_id === serviceId) {
-          const next = (i.qty || 1) + delta;
-          return { ...i, qty: next < 1 ? 1 : next };
-        }
-        return i;
-      })
-    );
+  // Удаление позиции из корзины
+  const removeFromCart = async (cartItemId) => {
+    if (!auth.token) return;
+    try {
+      await apiDelete(`/api/cart/${cartItemId}`, auth.token);
+      setCart((prev) => prev.filter((item) => item.cart_item_id !== cartItemId));
+    } catch (err) {
+      console.error("Ошибка при удалении из корзины:", err.message);
+    }
   };
 
-  const clearCart = () => setCart([]);
+  // Полная очистка корзины (после оформления заказа или по кнопке пользователя)
+  const clearCart = async () => {
+    if (!auth.token) {
+      setCart([]);
+      return;
+    }
+    try {
+      await apiDelete("/api/cart", auth.token);
+      setCart([]);
+    } catch (err) {
+      console.error("Ошибка при очистке корзины:", err.message);
+    }
+  };
 
-  const login = (token, user) => setAuth({ token, user });
-  const logout = () => setAuth({ token: null, user: null });
+  // Авторизация
+  const login = (token, user) => {
+    setAuth({ token, user });
+  };
+
+  // Выход из аккаунта (согласно требованиям, данные корзины остаются сохраненными на сервере в БД)
+  const logout = () => {
+    setAuth({ token: null, user: null });
+    setCart([]);
+  };
+
+  // Обновление профиля пользователя
+  const updateUser = (updatedUser, updatedToken) => {
+    setAuth((prev) => ({
+      token: updatedToken || prev.token,
+      user: { ...prev.user, ...updatedUser },
+    }));
+  };
+
+  // Подсчет общего количества позиций в корзине
+  const cartCount = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
+
+  // Подсчет общей суммы корзины
+  const cartTotal = cart.reduce(
+    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+    0
+  );
 
   return (
     <ShopContext.Provider
       value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQty,
-        clearCart,
         auth,
         login,
         logout,
+        updateUser,
+        cart,
+        cartCount,
+        cartTotal,
+        cartLoading,
+        cartError,
+        fetchCart: () => fetchCart(auth.token),
+        addToCart,
+        updateQty,
+        removeFromCart,
+        clearCart,
         isDark,
         toggleTheme,
       }}
