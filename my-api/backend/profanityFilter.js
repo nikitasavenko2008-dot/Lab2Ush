@@ -1,5 +1,3 @@
-// profanityFilter.js
-// Детектор ненормативной лексики с защитой от транслита (латиницы), подмены символов (leetspeak) и разбиения пробелами/точками
 
 const DIGRAPHS = [
   [/ya/gi, 'я'],
@@ -28,7 +26,7 @@ const SINGLE_CHARS = {
   'm': 'м',
   'n': 'н',
   'o': 'о', '0': 'о',
-  'p': 'п', // латинское p -> русское п
+  'p': 'п', 
   'r': 'р',
   's': 'с', '$': 'с', '5': 'с', 'c': 'с',
   't': 'т', '7': 'т',
@@ -38,7 +36,6 @@ const SINGLE_CHARS = {
   '4': 'ч'
 };
 
-// Список исключений (невинные русские слова, содержащие буквосочетания 'еб', 'бля' и т.д.)
 const WHITELIST = new Set([
   'ребенок', 'ребенка', 'ребенку', 'ребенком', 'ребенке', 'дети',
   'ребята', 'ребятам', 'ребятами',
@@ -66,9 +63,8 @@ function transliterate(str) {
   return out;
 }
 
-// Регулярные выражения явных матерных корней
 const BAD_ROOTS = [
-  // хуй, хуя, хуе, хуи, похуй, нахуй, х*й
+
   /х[уy][йиеёяю]/i,
   /пох[уy]/i,
   /нах[уy]/i,
@@ -76,28 +72,21 @@ const BAD_ROOTS = [
   /х[уy]я/i,
   /х[уy]е/i,
 
-  // пизд, пиздец
   /п[еи]зд/i,
 
-  // бляд, бля
   /бл[яя́][дьт]/i,
   /(?:^|[^а-яa-z0-9ё])бл[яя́](?:$|[^а-яa-z0-9ё])/i,
 
-  // мудак, мудил
   /муд[аиое][кчл]/i,
 
-  // сука, сучк, сучар
   /(?:^|[^а-яa-z0-9ё])с[уy]к[аиеоуы](?:$|[^а-яa-z0-9ё])/i,
   /с[уy]чк[аиеоу]/i,
   /с[уy]чар/i,
 
-  // гондон, гандон
   /г[ао]нд[оа]н/i,
 
-  // залупа
   /зал[уy]п/i,
 
-  // ебать, ебли, ебу, заеб, выеб, уеб, проеб, еблан
   /ебат/i,
   /ебут/i,
   /ебал/i,
@@ -115,7 +104,6 @@ const BAD_ROOTS = [
   /ебуч/i,
   /ебан/i,
 
-  // английские ругательства
   /(?:^|[^a-z])fuck(?:$|[^a-z])/i,
   /(?:^|[^a-z])bitch(?:$|[^a-z])/i,
   /(?:^|[^a-z])cunt(?:$|[^a-z])/i,
@@ -127,15 +115,12 @@ export function containsProfanity(text) {
   if (!text || typeof text !== "string") return false;
   const rawLower = text.toLowerCase();
 
-  // 1. Прямая проверка английских ругательств
   if (/(?:^|[^a-z])(fuck|bitch|cunt|dick|asshole)(?:$|[^a-z])/i.test(rawLower)) {
     return true;
   }
 
-  // 2. Транслитерация текста в кириллицу
   const translit = transliterate(rawLower);
 
-  // 3. Проверка отдельных слов с учетом белого списка
   const words = translit.split(/[^а-яa-z0-9ё]+/i).filter(Boolean);
   for (const word of words) {
     const collapsed = word.replace(/(.)\1+/g, "$1");
@@ -151,15 +136,13 @@ export function containsProfanity(text) {
     }
   }
 
-  // 4. Проверка сплошного текста (когда между буквами ставят точки или пробелы "п.и.з.д.а", "х у й")
   const lettersOnly = translit.replace(/[^а-яa-zё]/g, "");
   const collapsedAll = lettersOnly.replace(/(.)\1+/g, "$1");
 
-  // Исключаем совпадение если весь текст целиком - слово из белого списка
   if (!WHITELIST.has(lettersOnly) && !WHITELIST.has(collapsedAll)) {
     for (const re of BAD_ROOTS) {
       if (re.test(lettersOnly) || re.test(collapsedAll)) {
-        // Проверяем, не является ли это частью белого слова
+
         let inWhitelist = false;
         for (const wl of WHITELIST) {
           if (lettersOnly.includes(wl)) {

@@ -1,12 +1,4 @@
-/**
- * Страница регистрации нового пользователя (Лаб 4, разд. 2.5)
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * - Поля: полное имя (ФИО), email, телефон, адрес доставки, пароль, подтверждение пароля
- * - Проверка обязательного заполнения полей, формата email, длины и совпадения паролей
- * - Отображение ошибок валидации и сервера
- * - Автоматический вход и сохранение пользователя в базе данных через API
- */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiPost } from "../api";
@@ -18,7 +10,6 @@ export default function Register() {
   const { login } = useShop();
   const navigate = useNavigate();
 
-  // Состояние полей формы регистрации
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,7 +31,6 @@ export default function Register() {
     e.preventDefault();
     setError("");
 
-    // Валидация обязательных полей
     if (!formData.name.trim()) {
       setError("Укажите ваше полное имя (ФИО)");
       return;
@@ -82,7 +72,6 @@ export default function Register() {
         password: formData.password.trim(),
       });
 
-      // Успешная регистрация: сохраняем токен и переходим в каталог
       login(res.token, res.user);
       navigate("/dashboard");
     } catch (err) {

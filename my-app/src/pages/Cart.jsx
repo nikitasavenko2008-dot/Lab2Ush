@@ -1,13 +1,4 @@
-/**
- * Страница Корзины и оформления заказа (Лаб 4, разд. 2.2, 2.3)
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * - Отображает список выбранных позиций серверной корзины
- * - Позволяет изменять количество и удалять позиции
- * - Форма оформления заказа: адрес доставки, дата (валидация >= текущей), время, пожелания
- * - Промокод "VIP10"
- * - Сохранение заказа в БД через POST /api/orders и очистка корзины
- */
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
@@ -20,28 +11,23 @@ export default function Cart() {
   const { cart, cartLoading, cartError, updateQty, removeFromCart, clearCart, auth, fetchCart } = useShop();
   const navigate = useNavigate();
 
-  // Получаем текущую дату в формате YYYY-MM-DD для валидации (дата не может быть меньше текущей)
   const today = new Date().toISOString().split("T")[0];
 
-  // Поля оформления заказа
   const [deliveryAddress, setDeliveryAddress] = useState(auth.user?.address || "");
   const [deliveryDate, setDeliveryDate] = useState(today);
   const [deliveryTime, setDeliveryTime] = useState("14:00");
   const [notes, setNotes] = useState("");
 
-  // Промокод
   const [promoInput, setPromoInput] = useState("");
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState("");
 
-  // Состояние отправки заказа
   const [submitting, setSubmitting] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [createdOrder, setCreatedOrder] = useState(null);
 
   const isAdmin = auth.user?.role === "admin";
 
-  // Если зашел администратор — перенаправляем в панель управления (у администратора нет корзины)
   useEffect(() => {
     if (isAdmin) {
       navigate("/admin");
@@ -50,14 +36,12 @@ export default function Cart() {
 
   const userPersonalDiscount = Number(auth.user?.personal_discount_percent) || 0;
 
-  // Обновляем адрес при загрузке данных пользователя
   useEffect(() => {
     if (auth.user?.address && !deliveryAddress) {
       setDeliveryAddress(auth.user.address);
     }
   }, [auth.user, deliveryAddress]);
 
-  // Проверка и применение промокода через API базы данных
   const handleApplyPromo = async (e) => {
     e.preventDefault();
     setPromoError("");
@@ -81,7 +65,6 @@ export default function Cart() {
     }
   };
 
-  // Расчет сумм с учетом индивидуальных скидок на услуги
   const subtotal = cart.reduce((sum, item) => {
     const rawP = Number(item.price) || 0;
     const disc = Number(item.discount_percent) || 0;
@@ -89,11 +72,9 @@ export default function Cart() {
     return sum + effP * (Number(item.quantity) || 1);
   }, 0);
 
-  // Личная скидка клиента
   const personalDiscountAmount =
     userPersonalDiscount > 0 ? Math.round((subtotal * userPersonalDiscount) / 100) : 0;
 
-  // Скидка по промокоду
   const promoDiscountAmount = appliedPromo
     ? Math.round(((subtotal - personalDiscountAmount) * appliedPromo.discountPercent) / 100)
     : 0;
@@ -101,7 +82,6 @@ export default function Cart() {
   const totalDiscount = personalDiscountAmount + promoDiscountAmount;
   const totalAmount = Math.max(0, subtotal - totalDiscount);
 
-  // Оформление заказа
   const handleCheckout = async (e) => {
     e.preventDefault();
     if (!auth.token) {
@@ -119,7 +99,6 @@ export default function Cart() {
       return;
     }
 
-    // Валидация: дата не может быть меньше текущей
     if (deliveryDate < today) {
       setOrderError("Дата обслуживания не может быть меньше сегодняшней даты");
       return;
@@ -183,7 +162,6 @@ export default function Cart() {
     );
   }
 
-  // Экран успешного оформления заказа
   if (createdOrder) {
     return (
       <div className="cart-page-container">
@@ -252,7 +230,7 @@ export default function Cart() {
 
       {!cartLoading && cart.length > 0 && (
         <div className="cart-grid-layout">
-          {/* Левая колонка: список позиций в корзине */}
+
           <div className="cart-items-column">
             <div className="cart-items-card">
               <div className="cart-card-header">
@@ -356,7 +334,6 @@ export default function Cart() {
               </div>
             </div>
 
-            {/* Блок промокода и персональной скидки */}
             <div className="promo-code-card">
               <h4>Промокод и личная скидка</h4>
 
@@ -389,7 +366,6 @@ export default function Cart() {
             </div>
           </div>
 
-          {/* Правая колонка: форма оформления заказа (Лаб 4, разд. 2.3) */}
           <div className="checkout-column">
             <div className="checkout-card">
               <h3>Оформление заказа</h3>
@@ -453,7 +429,6 @@ export default function Cart() {
                   />
                 </div>
 
-                {/* Расчет итогов */}
                 <div className="order-totals-breakdown">
                   <div className="totals-row">
                     <span>Подытог:</span>

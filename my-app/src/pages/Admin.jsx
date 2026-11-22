@@ -1,19 +1,4 @@
-/**
- * Панель управления Администратора (Лаб 4, разд. 3.9)
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * В соответствии с детальными требованиями:
- * 1. Администратор управляет абсолютно всеми ресурсами:
- *    - Услуги / товары (добавление, редактирование с модальным окном и предпросмотром фото, удаление, остаток на складе)
- *    - Категории (добавление, редактирование, удаление с автопереносом товаров в «Без категории»)
- *    - Заказы (модальное окно с составом товаров, количеством, фотографиями, скидками и сменой статуса)
- *    - Отзывы (просмотр товаров с фотографиями и удаление отзыва за нарушение правил)
- *    - Промокоды (создание, скидки, активность, удаление)
- *    - Пользователи (редактирование роли admin/user, личные скидки, удаление)
- * 2. Модальные окна для добавления и редактирования сущностей.
- * 3. Быстрый поиск по каждому разделу.
- * 4. Строгая валидация (цена > 0, длительность > 0, остаток >= 0).
- */
+
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiGet, apiPost, apiPut, apiDelete } from "../api";
@@ -26,15 +11,12 @@ export default function Admin() {
   const { auth } = useShop();
   const navigate = useNavigate();
 
-  // Активная вкладка
   const [activeTab, setActiveTab] = useState("services");
 
-  // Состояние загрузки и общих сообщений
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState("");
 
-  // Ресурсы базы данных
   const [services, setServices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -42,7 +24,6 @@ export default function Admin() {
   const [coupons, setCoupons] = useState([]);
   const [users, setUsers] = useState([]);
 
-  // Строки поиска для каждого раздела
   const [searchService, setSearchService] = useState("");
   const [searchCategory, setSearchCategory] = useState("");
   const [searchOrder, setSearchOrder] = useState("");
@@ -50,10 +31,8 @@ export default function Admin() {
   const [searchCoupon, setSearchCoupon] = useState("");
   const [searchUser, setSearchUser] = useState("");
 
-  // Модальные окна: null | "service" | "category" | "coupon" | "order"
   const [activeModal, setActiveModal] = useState(null);
 
-  // Форма модалки услуги
   const [editingServiceId, setEditingServiceId] = useState(null);
   const [serviceForm, setServiceForm] = useState({
     name: "",
@@ -67,11 +46,9 @@ export default function Admin() {
   });
   const [serviceModalError, setServiceModalError] = useState("");
 
-  // Форма модалки категории
   const [categoryModalData, setCategoryModalData] = useState({ id: null, name: "" });
   const [catModalError, setCatModalError] = useState("");
 
-  // Форма модалки промокода
   const [couponModalData, setCouponModalData] = useState({
     id: null,
     code: "",
@@ -81,11 +58,9 @@ export default function Admin() {
   });
   const [couponModalError, setCouponModalError] = useState("");
 
-  // Выбранный заказ для модалки деталей и статуса
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderModalMsg, setOrderModalMsg] = useState("");
 
-  // Загрузка всех данных панели администратора
   const loadAdminData = useCallback(async () => {
     if (!auth.token || auth.user?.role !== "admin") {
       navigate("/login");
@@ -121,15 +96,10 @@ export default function Admin() {
     loadAdminData();
   }, [loadAdminData]);
 
-  // Уведомление об успешном действии
   const showSuccess = (msg) => {
     setActionSuccess(msg);
     setTimeout(() => setActionSuccess(""), 4000);
   };
-
-  // ==========================================
-  // 1. УПРАВЛЕНИЕ УСЛУГАМИ / ТОВАРАМИ
-  // ==========================================
 
   const handleOpenAddService = () => {
     setEditingServiceId(null);
@@ -228,10 +198,6 @@ export default function Admin() {
     }
   };
 
-  // ==========================================
-  // 2. УПРАВЛЕНИЕ КАТЕГОРИЯМИ
-  // ==========================================
-
   const handleOpenAddCategory = () => {
     setCategoryModalData({ id: null, name: "" });
     setCatModalError("");
@@ -300,10 +266,6 @@ export default function Admin() {
       alert(err.message);
     }
   };
-
-  // ==========================================
-  // 3. УПРАВЛЕНИЕ ПРОМОКОДАМИ
-  // ==========================================
 
   const handleOpenAddCoupon = () => {
     setCouponModalData({ id: null, code: "", discount_percent: 10, description: "", is_active: true });
@@ -375,10 +337,6 @@ export default function Admin() {
     }
   };
 
-  // ==========================================
-  // 4. УПРАВЛЕНИЕ ЗАКАЗАМИ
-  // ==========================================
-
   const handleOpenOrderModal = (order) => {
     setSelectedOrder(order);
     setOrderModalMsg("");
@@ -401,10 +359,6 @@ export default function Admin() {
     }
   };
 
-  // ==========================================
-  // 5. МОДЕРАЦИЯ ОТЗЫВОВ
-  // ==========================================
-
   const handleDeleteReview = async (reviewId, reviewerName) => {
     if (
       !window.confirm(
@@ -421,10 +375,6 @@ export default function Admin() {
       alert(err.message);
     }
   };
-
-  // ==========================================
-  // 6. УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
-  // ==========================================
 
   const handleUpdateUserRole = async (userId, roleId) => {
     try {
@@ -471,7 +421,6 @@ export default function Admin() {
     }
   };
 
-  // Фильтрация списков по строкам поиска
   const filteredServices = services.filter((s) => {
     const term = searchService.toLowerCase();
     return (
@@ -537,7 +486,7 @@ export default function Admin() {
 
   return (
     <div className="admin-container">
-      {/* Шапка админ-панели */}
+
       <div className="admin-header-card">
         <div>
           <h1>Панель управления администратора</h1>
@@ -550,7 +499,6 @@ export default function Admin() {
       {actionSuccess && <div className="admin-success-alert">✓ {actionSuccess}</div>}
       {error && <ErrorBox message={error} />}
 
-      {/* Вкладки разделов */}
       <div className="admin-tabs-row">
         <button
           className={`admin-tab-btn ${activeTab === "services" ? "active" : ""}`}
@@ -594,9 +542,7 @@ export default function Admin() {
 
       {!loading && (
         <div className="admin-content-pane">
-          {/* ======================================================= */}
-          {/* ВКЛАДКА 1: УСЛУГИ И ТОВАРЫ */}
-          {/* ======================================================= */}
+
           {activeTab === "services" && (
             <div className="admin-section">
               <div className="admin-toolbar">
@@ -715,9 +661,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ======================================================= */}
-          {/* ВКЛАДКА 2: КАТЕГОРИИ */}
-          {/* ======================================================= */}
           {activeTab === "categories" && (
             <div className="admin-section">
               <div className="admin-toolbar">
@@ -797,9 +740,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ======================================================= */}
-          {/* ВКЛАДКА 3: ПРОМОКОДЫ */}
-          {/* ======================================================= */}
           {activeTab === "coupons" && (
             <div className="admin-section">
               <div className="admin-toolbar">
@@ -873,9 +813,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ======================================================= */}
-          {/* ВКЛАДКА 4: ВСЕ ЗАКАЗЫ */}
-          {/* ======================================================= */}
           {activeTab === "orders" && (
             <div className="admin-section">
               <div className="admin-toolbar">
@@ -990,9 +927,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ======================================================= */}
-          {/* ВКЛАДКА 5: ОТЗЫВЫ КЛИЕНТОВ (С ФОТО И УДАЛЕНИЕМ ЗА НАРУШЕНИЕ) */}
-          {/* ======================================================= */}
           {activeTab === "reviews" && (
             <div className="admin-section">
               <div className="admin-toolbar">
@@ -1079,9 +1013,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ======================================================= */}
-          {/* ВКЛАДКА 6: ПОЛЬЗОВАТЕЛИ */}
-          {/* ======================================================= */}
           {activeTab === "users" && (
             <div className="admin-section">
               <div className="admin-toolbar">
@@ -1174,9 +1105,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* ======================================================= */}
-      {/* МОДАЛЬНОЕ ОКНО 1: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ УСЛУГИ С ФОТО */}
-      {/* ======================================================= */}
       {activeModal === "service" && (
         <div className="admin-modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="admin-modal-window modal-wide" onClick={(e) => e.stopPropagation()}>
@@ -1277,7 +1205,6 @@ export default function Admin() {
                   />
                 </div>
 
-                {/* БЛОК ПРЕДПРОСМОТРА И УДАЛЕНИЯ ФОТО */}
                 <div className="form-group full-width photo-preview-group">
                   <label>Предпросмотр фотографии:</label>
                   {serviceForm.image ? (
@@ -1333,9 +1260,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* ======================================================= */}
-      {/* МОДАЛЬНОЕ ОКНО 2: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ КАТЕГОРИИ */}
-      {/* ======================================================= */}
       {activeModal === "category" && (
         <div className="admin-modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="admin-modal-window modal-compact" onClick={(e) => e.stopPropagation()}>
@@ -1371,9 +1295,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* ======================================================= */}
-      {/* МОДАЛЬНОЕ ОКНО 3: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ ПРОМОКОДА */}
-      {/* ======================================================= */}
       {activeModal === "coupon" && (
         <div className="admin-modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="admin-modal-window modal-compact" onClick={(e) => e.stopPropagation()}>
@@ -1447,9 +1368,6 @@ export default function Admin() {
         </div>
       )}
 
-      {/* ======================================================= */}
-      {/* МОДАЛЬНОЕ ОКНО 4: ДЕТАЛИ ЗАКАЗА, ТОВАРЫ С ФОТО И СМЕНА СТАТУСА */}
-      {/* ======================================================= */}
       {activeModal === "order" && selectedOrder && (
         <div className="admin-modal-overlay" onClick={() => setActiveModal(null)}>
           <div className="admin-modal-window modal-wide" onClick={(e) => e.stopPropagation()}>
@@ -1466,7 +1384,7 @@ export default function Admin() {
             {orderModalMsg && <div className="admin-success-alert">✓ {orderModalMsg}</div>}
 
             <div className="order-modal-content">
-              {/* Блок смены статуса */}
+
               <div className="order-status-control-box">
                 <label><strong>Управление статусом заказа:</strong></label>
                 <div className="status-button-group">
@@ -1483,7 +1401,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Данные клиента и доставки */}
               <div className="order-details-grid">
                 <div className="detail-card">
                   <h4>Клиент</h4>
@@ -1517,7 +1434,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Перечень товаров/услуг с фотографиями и количеством */}
               <div className="order-items-table-wrapper">
                 <h4>Состав заказа ({selectedOrder.items?.length || 0} позиций):</h4>
                 <table className="order-items-subtable">

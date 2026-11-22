@@ -1,10 +1,4 @@
-/**
- * Карточка услуги каталога «Royal Catering»
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * Отображает название, описание, категорию (через SQL JOIN), длительность, цену,
- * средний рейтинг и кнопку вызова модального окна отзывов.
- */
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";

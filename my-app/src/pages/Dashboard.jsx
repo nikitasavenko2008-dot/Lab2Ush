@@ -1,12 +1,4 @@
-/**
- * Личный кабинет пользователя (Лаб 4, разд. 2.7)
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * Вкладки:
- * 1. Мои заказы — просмотр сделанных заказов (дата, адрес, статус, состав услуг в едином блоке, итоговая стоимость)
- * 2. Личные данные — редактирование профиля (ФИО, email, телефон, адрес доставки) с сохранением в БД через API
- * 3. Безопасность — изменение пароля с проверкой текущего пароля
- */
+
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
@@ -19,15 +11,12 @@ export default function Dashboard() {
   const { auth, logout, updateUser } = useShop();
   const navigate = useNavigate();
 
-  // Активная вкладка: "orders" | "profile" | "password"
   const [activeTab, setActiveTab] = useState("orders");
 
-  // Состояние списка заказов
   const [orders, setOrders] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState(null);
 
-  // Форма редактирования личных данных
   const [profileForm, setProfileForm] = useState({
     name: auth.user?.name || "",
     email: auth.user?.email || "",
@@ -38,7 +27,6 @@ export default function Dashboard() {
   const [profileSuccess, setProfileSuccess] = useState("");
   const [profileError, setProfileError] = useState("");
 
-  // Форма изменения пароля
   const [passwordForm, setPasswordForm] = useState({
     current_password: "",
     new_password: "",
@@ -48,7 +36,6 @@ export default function Dashboard() {
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  // Синхронизация формы профиля при смене пользователя
   useEffect(() => {
     if (auth.user) {
       setProfileForm({
@@ -60,7 +47,6 @@ export default function Dashboard() {
     }
   }, [auth.user]);
 
-  // Загрузка заказов текущего пользователя
   const loadOrders = useCallback(async () => {
     if (!auth.token) return;
     setOrdersLoading(true);
@@ -96,7 +82,6 @@ export default function Dashboard() {
     );
   }
 
-  // Обработка сохранения профиля с полной валидацией всех полей
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setProfileError("");
@@ -153,7 +138,6 @@ export default function Dashboard() {
     }
   };
 
-  // Обработка смены пароля с валидацией
   const handleSavePassword = async (e) => {
     e.preventDefault();
     setPasswordError("");
@@ -203,7 +187,6 @@ export default function Dashboard() {
     }
   };
 
-  // Класс для статуса заказа
   const getStatusClass = (status) => {
     switch (status) {
       case "Выполнен":
@@ -219,7 +202,6 @@ export default function Dashboard() {
     }
   };
 
-  // Форматирование даты
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     try {
@@ -232,7 +214,7 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      {/* Шапка личного кабинета */}
+
       <div className="dashboard-header-card">
         <div className="user-info-meta">
           <div className="avatar-placeholder">
@@ -267,7 +249,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Вкладки личного кабинета */}
       <div className="dash-nav-tabs">
         <button
           className={`dash-tab-btn ${activeTab === "orders" ? "active" : ""}`}
@@ -289,7 +270,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Вкладка 1: Список всех заказов */}
       {activeTab === "orders" && (
         <div className="tab-pane-content">
           {ordersLoading && <Loader text="Загрузка истории ваших заказов..." />}
@@ -310,7 +290,7 @@ export default function Dashboard() {
             <div className="orders-cards-list">
               {orders.map((order) => (
                 <div key={order.order_id} className="order-block-card">
-                  {/* Заголовок единого блока заказа */}
+
                   <div className="order-block-header">
                     <div className="order-id-date">
                       <span className="order-num-badge">Заказ №{order.order_id}</span>
@@ -326,7 +306,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Информация о доставке и адрес */}
                   <div className="order-block-details">
                     <div className="order-detail-item">
                       <span className="detail-label">Адрес выезда / проведения:</span>
@@ -356,7 +335,6 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Список услуг, входящих в данный заказ (без ID, только понятные данные) */}
                   <div className="order-services-table">
                     <div className="services-table-header">
                       <span>Услуга</span>
@@ -398,7 +376,6 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Итоговая сумма заказа */}
                   <div className="order-block-footer">
                     <span className="footer-order-created">
                       Оформлен: {order.created_at ? new Date(order.created_at).toLocaleString("ru-RU") : "Недавно"}
@@ -420,7 +397,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Вкладка 2: Редактирование личных данных */}
       {activeTab === "profile" && (
         <div className="tab-pane-content">
           <div className="profile-edit-card">
@@ -483,7 +459,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Вкладка 3: Изменение пароля */}
       {activeTab === "password" && (
         <div className="tab-pane-content">
           <div className="profile-edit-card">

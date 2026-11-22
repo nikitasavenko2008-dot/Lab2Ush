@@ -1,13 +1,4 @@
-/**
- * Страница авторизации (Лаб 4, разд. 2.4)
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * - Поля: email, пароль
- * - Валидация обязательного заполнения полей и формата email
- * - Восстановление пароля ("проверка на глупого пользователя": забыл пароль -> ввод email -> код 1234 -> новый пароль)
- * - Ссылка на регистрацию нового аккаунта
- * - Демо-учетные записи для преподавателя
- */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiPost } from "../api";
@@ -19,24 +10,20 @@ export default function Login() {
   const { login } = useShop();
   const navigate = useNavigate();
 
-  // Режим: "login" (вход) или "forgot" (восстановление)
   const [mode, setMode] = useState("login");
 
-  // Поля входа
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Поля сброса пароля
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotCode, setForgotCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [forgotStep, setForgotStep] = useState(1); // 1: ввод email, 2: ввод кода и нового пароля
+  const [forgotStep, setForgotStep] = useState(1); 
   const [forgotHint, setForgotHint] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState("");
 
-  // Обработка авторизации
   async function handleSubmitLogin(e) {
     e.preventDefault();
     setError("");
@@ -74,7 +61,6 @@ export default function Login() {
     }
   }
 
-  // Шаг 1 сброса пароля: отправка кода
   async function handleSendResetCode(e) {
     e.preventDefault();
     setError("");
@@ -98,7 +84,6 @@ export default function Login() {
     }
   }
 
-  // Шаг 2 сброса пароля: применение нового пароля
   async function handleResetPassword(e) {
     e.preventDefault();
     setError("");
@@ -135,7 +120,6 @@ export default function Login() {
     }
   }
 
-  // Быстрое заполнение тестовых аккаунтов
   const fillCredentials = (userEmail, userPass) => {
     setEmail(userEmail);
     setPassword(userPass);
@@ -202,7 +186,6 @@ export default function Login() {
               </Link>
             </div>
 
-            {/* Подсказки для преподавателя */}
             <div className="login-demo-accounts">
               <div className="demo-accounts-title">Демо-аккаунты для проверки:</div>
               <div
@@ -222,7 +205,7 @@ export default function Login() {
             </div>
           </>
         ) : (
-          /* Форма восстановления пароля */
+
           <>
             <div className="login-card-header">
               <h2>Восстановление пароля</h2>

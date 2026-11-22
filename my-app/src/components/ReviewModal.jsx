@@ -1,8 +1,4 @@
-/**
- * Модальное окно просмотра и добавления отзывов к услуге (Лаб 4, разд. 2.6)
- * Подтягивает отзывы через API (с JOIN таблицы users),
- * позволяет авторизованному пользователю поставить 1-5 звезд и написать комментарий.
- */
+
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { apiGet, apiPost } from "../api";
@@ -15,14 +11,12 @@ export default function ReviewModal({ service, onClose, auth, onReviewAdded }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Состояние формы добавления отзыва
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  // Загрузка отзывов к выбранной услуге
   const loadReviews = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -40,7 +34,6 @@ export default function ReviewModal({ service, onClose, auth, onReviewAdded }) {
     loadReviews();
   }, [loadReviews]);
 
-  // Обработка отправки нового отзыва
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!comment.trim()) {
@@ -91,7 +84,6 @@ export default function ReviewModal({ service, onClose, auth, onReviewAdded }) {
           {loading && <Loader text="Загрузка отзывов..." />}
           {error && <ErrorBox message={error} />}
 
-          {/* Список существующих отзывов */}
           {!loading && !error && (
             <div className="reviews-list-section">
               {reviews.length === 0 ? (
@@ -120,7 +112,6 @@ export default function ReviewModal({ service, onClose, auth, onReviewAdded }) {
             </div>
           )}
 
-          {/* Форма добавления отзыва */}
           <div className="add-review-section">
             <h4>Оставить отзыв</h4>
             {auth.user ? (

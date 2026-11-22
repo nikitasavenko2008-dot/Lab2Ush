@@ -1,10 +1,4 @@
-/**
- * Серверный модуль Express API для приложения «Royal Catering»
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * Поддерживает работу с PostgreSQL (clinic_db) и резервной базой данных SQLite (restaurant.db).
- * Все запросы к связанным сущностям выполнены через SQL JOIN.
- */
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -20,7 +14,6 @@ const PORT = process.env.PORT || 3100;
 app.use(cors());
 app.use(express.json());
 
-// Инициализация пула подключений к PostgreSQL
 const { Pool } = pg;
 const pool = new Pool({
   host: process.env.DB_HOST || "localhost",
@@ -43,10 +36,6 @@ pool.connect((err, client, release) => {
   }
 });
 
-/**
- * Заменяет подстановочные знаки '?' на '$1', '$2' для PostgreSQL,
- * корректно игнорируя знаки '?' внутри строковых литералов (например в URL картинок).
- */
 function convertSqlPlaceholders(sql) {
   let result = "";
   let inString = false;
@@ -76,10 +65,6 @@ function convertSqlPlaceholders(sql) {
   return result;
 }
 
-/**
- * Универсальная функция выполнения SQL-запросов
- * Поддерживает как PostgreSQL ($1, $2), так и SQLite (?)
- */
 async function queryDB(sql, params = []) {
   if (usePostgres) {
     const pgSql = convertSqlPlaceholders(sql);
@@ -98,9 +83,6 @@ async function queryDB(sql, params = []) {
   }
 }
 
-// ----------------------------------------------------
-// Вспомогательные функции для токенов аутентификации
-// ----------------------------------------------------
 function generateToken(user) {
   const payload = {
     user_id: user.user_id,
@@ -126,9 +108,6 @@ function verifyToken(token) {
   }
 }
 
-/**
- * Middleware проверки авторизации пользователя
- */
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -143,9 +122,6 @@ function authMiddleware(req, res, next) {
   next();
 }
 
-/**
- * Middleware проверки прав администратора
- */
 function adminMiddleware(req, res, next) {
   authMiddleware(req, res, () => {
     if (req.user?.role !== "admin") {
@@ -155,11 +131,6 @@ function adminMiddleware(req, res, next) {
   });
 }
 
-// ====================================================
-// МАРШРУТЫ АВТОРИЗАЦИИ И ПОЛЬЗОВАТЕЛЕЙ (Лаб 4, разд. 2.4, 2.5, 2.7)
-// ====================================================
-
-// Регистрация нового пользователя
 app.post("/api/auth/register", async (req, res) => {
   const { name, email, password, phone, address = "" } = req.body;
   if (!name?.trim() || !email?.trim() || !password?.trim() || !phone?.trim()) {
@@ -202,7 +173,6 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
-// Авторизация пользователя
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
   if (!email?.trim() || !password?.trim()) {
@@ -239,7 +209,6 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-// Получение профиля текущего пользователя
 app.get("/api/auth/me", authMiddleware, async (req, res) => {
   try {
     const rows = await queryDB(
@@ -260,7 +229,6 @@ app.get("/api/auth/me", authMiddleware, async (req, res) => {
   }
 });
 
-// Обновление контактной информации профиля
 app.put("/api/auth/profile", authMiddleware, async (req, res) => {
   const { name, email, phone, address } = req.body;
   if (!name?.trim() || !email?.trim() || !phone?.trim()) {
@@ -310,7 +278,6 @@ app.put("/api/auth/profile", authMiddleware, async (req, res) => {
   }
 });
 
-// Изменение пароля пользователя
 app.put("/api/auth/password", authMiddleware, async (req, res) => {
   const { current_password, new_password } = req.body;
   if (!current_password?.trim() || !new_password?.trim()) {
@@ -334,7 +301,6 @@ app.put("/api/auth/password", authMiddleware, async (req, res) => {
   }
 });
 
-// Восстановление пароля: запрос проверочного кода (проверка на "глупого" пользователя)
 app.post("/api/auth/forgot-password", async (req, res) => {
   const { email } = req.body;
   if (!email?.trim()) {
@@ -361,7 +327,6 @@ app.post("/api/auth/forgot-password", async (req, res) => {
   }
 });
 
-// Восстановление пароля: установка нового пароля по коду
 app.post("/api/auth/reset-password", async (req, res) => {
   const { email, code, new_password } = req.body;
   if (!email?.trim() || !code?.trim() || !new_password?.trim()) {
@@ -389,11 +354,6 @@ app.post("/api/auth/reset-password", async (req, res) => {
   }
 });
 
-// ====================================================
-// МАРШРУТЫ КАТЕГОРИЙ (Лаб 4, разд. 2.1)
-// ====================================================
-
-// Вспомогательная функция: гарантирует существование категории «Без категории»
 async function getOrCreateUncategorizedId() {
   const rows = await queryDB("SELECT category_id FROM categories WHERE name = 'Без категории'");
   if (rows.length > 0) return rows[0].category_id;
@@ -401,10 +361,9 @@ async function getOrCreateUncategorizedId() {
   return ins[0]?.category_id || ins[0]?.insertId;
 }
 
-// Получение списка категорий с количеством услуг через JOIN
 app.get("/api/categories", async (req, res) => {
   try {
-    // Гарантируем наличие категории «Без категории»
+
     await getOrCreateUncategorizedId();
 
     const rows = await queryDB(
@@ -420,7 +379,6 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// Создание категории (Администратор)
 app.post("/api/categories", adminMiddleware, async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) {
@@ -439,7 +397,6 @@ app.post("/api/categories", adminMiddleware, async (req, res) => {
   }
 });
 
-// Редактирование категории (Администратор)
 app.put("/api/categories/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
@@ -456,8 +413,6 @@ app.put("/api/categories/:id", adminMiddleware, async (req, res) => {
     const oldName = existing[0].name;
     await queryDB("UPDATE categories SET name = ? WHERE category_id = ?", [name.trim(), id]);
 
-    // Если была переименована системная категория «Без категории», автоматически создаем ее снова,
-    // чтобы категория «Без категории» всегда гарантированно существовала
     if (oldName === "Без категории" && name.trim() !== "Без категории") {
       await getOrCreateUncategorizedId();
     }
@@ -468,8 +423,6 @@ app.put("/api/categories/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// Удаление категории (Администратор)
-// Согласно требованиям: удаление категории автоматически переносит все ее товары/услуги в «Без категории»
 app.delete("/api/categories/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
@@ -484,10 +437,8 @@ app.delete("/api/categories/:id", adminMiddleware, async (req, res) => {
 
     const uncatId = await getOrCreateUncategorizedId();
 
-    // Автоматический перенос всех услуг удаляемой категории в категорию «Без категории»
     await queryDB("UPDATE services SET category_id = ? WHERE category_id = ?", [uncatId, id]);
 
-    // Удаляем саму категорию
     await queryDB("DELETE FROM categories WHERE category_id = ?", [id]);
 
     res.json({
@@ -499,11 +450,6 @@ app.delete("/api/categories/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// ====================================================
-// МАРШРУТЫ УСЛУГ КАТАЛОГА (Лаб 4, разд. 2.1)
-// ====================================================
-
-// Получение списка всех услуг через JOIN категорий и отзывов
 app.get("/api/services", async (req, res) => {
   const { category_id, search, min_price, max_price } = req.query;
 
@@ -562,7 +508,6 @@ app.get("/api/services", async (req, res) => {
   }
 });
 
-// Получение одной услуги с отзывами через JOIN
 app.get("/api/services/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -593,7 +538,6 @@ app.get("/api/services/:id", async (req, res) => {
   }
 });
 
-// Создание услуги / товара (Администратор)
 app.post("/api/services", adminMiddleware, async (req, res) => {
   let { name, description, duration, price, category_id, image, discount_percent, stock_quantity } = req.body;
   if (!name?.trim()) {
@@ -617,7 +561,6 @@ app.post("/api/services", adminMiddleware, async (req, res) => {
     validateProfanity(name, "Название услуги");
     if (description) validateProfanity(description, "Описание услуги");
 
-    // Если категория не выбрана, автоматически назначается «Без категории»
     if (!category_id) {
       category_id = await getOrCreateUncategorizedId();
     } else {
@@ -647,7 +590,6 @@ app.post("/api/services", adminMiddleware, async (req, res) => {
   }
 });
 
-// Редактирование услуги / товара (Администратор)
 app.put("/api/services/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   let { name, description, duration, price, category_id, image, discount_percent, stock_quantity } = req.body;
@@ -698,7 +640,6 @@ app.put("/api/services/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// Быстрая установка скидки на услугу (Администратор)
 app.put("/api/services/:id/discount", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { discount_percent } = req.body;
@@ -712,7 +653,6 @@ app.put("/api/services/:id/discount", adminMiddleware, async (req, res) => {
   }
 });
 
-// Удаление услуги (Администратор)
 app.delete("/api/services/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
@@ -725,12 +665,6 @@ app.delete("/api/services/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// ====================================================
-// МАРШРУТЫ СЕРВЕРНОЙ КОРЗИНЫ (Лаб 4, разд. 2.2)
-// Корзина хранится в базе данных, уникальна для каждого пользователя, сохраняется при выходе
-// ====================================================
-
-// Получение корзины текущего пользователя через JOIN
 app.get("/api/cart", authMiddleware, async (req, res) => {
   try {
     const rows = await queryDB(
@@ -761,7 +695,6 @@ app.get("/api/cart", authMiddleware, async (req, res) => {
   }
 });
 
-// Добавление услуги / товара в корзину с проверкой наличия на складе
 app.post("/api/cart", authMiddleware, async (req, res) => {
   const { service_id, quantity = 1 } = req.body;
   if (!service_id) {
@@ -771,7 +704,7 @@ app.post("/api/cart", authMiddleware, async (req, res) => {
   const addQty = Math.max(1, Number(quantity) || 1);
 
   try {
-    // Проверка остатка на складе
+
     const svc = await queryDB("SELECT name, COALESCE(stock_quantity, 15) AS stock_quantity FROM services WHERE service_id = ?", [service_id]);
     if (svc.length === 0) {
       return res.status(404).json({ error: "Услуга / товар не найдена" });
@@ -802,7 +735,6 @@ app.post("/api/cart", authMiddleware, async (req, res) => {
       );
     }
 
-    // Возвращаем актуальную корзину через JOIN
     const updated = await queryDB(
       `SELECT ci.*, s.name, s.price, COALESCE(s.discount_percent, 0) AS discount_percent,
               COALESCE(s.stock_quantity, 15) AS stock_quantity,
@@ -822,7 +754,6 @@ app.post("/api/cart", authMiddleware, async (req, res) => {
   }
 });
 
-// Изменение количества позиции в корзине
 app.put("/api/cart/:id", authMiddleware, async (req, res) => {
   const { id } = req.params;
   const { quantity } = req.body;
@@ -832,7 +763,7 @@ app.put("/api/cart/:id", authMiddleware, async (req, res) => {
     if (newQty <= 0) {
       await queryDB("DELETE FROM cart_items WHERE cart_item_id = ? AND user_id = ?", [id, req.user.user_id]);
     } else {
-      // Проверяем доступный остаток на складе
+
       const itemRow = await queryDB(
         `SELECT ci.quantity, s.name, COALESCE(s.stock_quantity, 15) AS stock_quantity
          FROM cart_items ci
@@ -872,7 +803,6 @@ app.put("/api/cart/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// Удаление одной позиции из корзины
 app.delete("/api/cart/:id", authMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
@@ -883,7 +813,6 @@ app.delete("/api/cart/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// Полная очистка корзины текущего пользователя
 app.delete("/api/cart", authMiddleware, async (req, res) => {
   try {
     await queryDB("DELETE FROM cart_items WHERE user_id = ?", [req.user.user_id]);
@@ -893,16 +822,9 @@ app.delete("/api/cart", authMiddleware, async (req, res) => {
   }
 });
 
-// ====================================================
-// МАРШРУТЫ ЗАКАЗОВ (Лаб 4, разд. 2.3, 2.7)
-// Оформление с сохранением на сервере, валидацией даты >= текущей, купонами и скидками
-// ====================================================
-
-// Создание нового заказа из текущей корзины пользователя
 app.post("/api/orders", authMiddleware, async (req, res) => {
   const { delivery_address, delivery_date, delivery_time = "12:00", notes = "", coupon_code = "" } = req.body;
 
-  // Валидация адреса
   if (!delivery_address?.trim()) {
     return res.status(400).json({ error: "Укажите адрес выезда / доставки" });
   }
@@ -910,7 +832,6 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
     return res.status(400).json({ error: "Адрес должен содержать не менее 5 символов" });
   }
 
-  // Валидация даты: не может быть меньше текущей даты
   if (!delivery_date) {
     return res.status(400).json({ error: "Укажите дату обслуживания" });
   }
@@ -925,11 +846,10 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
   }
 
   try {
-    // Проверка на ненормативную лексику
+
     validateProfanity(delivery_address, "Адрес доставки");
     if (notes) validateProfanity(notes, "Заметки к заказу");
 
-    // Получаем текущие позиции корзины пользователя через JOIN
     const cartItems = await queryDB(
       `SELECT ci.*, s.name, s.price, COALESCE(s.discount_percent, 0) AS discount_percent,
               COALESCE(s.stock_quantity, 15) AS stock_quantity
@@ -943,7 +863,6 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
       return res.status(400).json({ error: "Ваша корзина пуста. Добавьте услуги перед оформлением заказа." });
     }
 
-    // Проверка остатка на складе
     for (const item of cartItems) {
       if (item.quantity > item.stock_quantity) {
         return res.status(400).json({
@@ -952,18 +871,15 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
       }
     }
 
-    // Расчет базовой суммы с учетом скидок на услуги
     const subtotalAmount = cartItems.reduce((sum, item) => {
       const effPrice = item.discount_percent > 0 ? Math.round(item.price * (1 - item.discount_percent / 100)) : item.price;
       return sum + effPrice * item.quantity;
     }, 0);
 
-    // Персональная скидка клиента
     const userRows = await queryDB("SELECT COALESCE(personal_discount_percent, 0) AS personal_discount_percent FROM users WHERE user_id = ?", [req.user.user_id]);
     const personalDiscountPercent = Number(userRows[0]?.personal_discount_percent) || 0;
     const personalDiscountVal = personalDiscountPercent > 0 ? Math.round((subtotalAmount * personalDiscountPercent) / 100) : 0;
 
-    // Скидка по промокоду (купону)
     let cleanCouponCode = "";
     let couponDiscountPercent = 0;
     if (coupon_code?.trim()) {
@@ -980,7 +896,6 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
 
     const totalAmount = Math.max(0, subtotalAmount - personalDiscountVal - couponDiscountVal);
 
-    // Создаем запись заказа в таблице orders
     const orderRes = await queryDB(
       `INSERT INTO orders (user_id, delivery_address, delivery_date, delivery_time, total_amount, coupon_code, coupon_discount_percent, personal_discount_percent, subtotal_amount, status, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Новый', ?) RETURNING order_id`,
@@ -1000,7 +915,6 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
 
     const orderId = orderRes[0].order_id || orderRes[0].insertId;
 
-    // Переносим позиции из корзины в order_items и списываем остаток на складе
     for (const item of cartItems) {
       const finalItemPrice = item.discount_percent > 0 ? Math.round(item.price * (1 - item.discount_percent / 100)) : item.price;
       await queryDB(
@@ -1013,7 +927,6 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
       );
     }
 
-    // Очищаем корзину пользователя
     await queryDB("DELETE FROM cart_items WHERE user_id = ?", [req.user.user_id]);
 
     res.status(201).json({
@@ -1031,7 +944,6 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
   }
 });
 
-// Получение списка заказов текущего пользователя (с группировкой всех услуг внутри одного блока заказа)
 app.get("/api/orders/my", authMiddleware, async (req, res) => {
   try {
     const orders = await queryDB(
@@ -1063,7 +975,6 @@ app.get("/api/orders/my", authMiddleware, async (req, res) => {
   }
 });
 
-// Получение всех заказов всех пользователей (Администратор)
 app.get("/api/orders", adminMiddleware, async (req, res) => {
   try {
     const orders = await queryDB(
@@ -1093,7 +1004,6 @@ app.get("/api/orders", adminMiddleware, async (req, res) => {
   }
 });
 
-// Смена статуса заказа (Администратор)
 app.put("/api/orders/:id/status", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -1111,11 +1021,6 @@ app.put("/api/orders/:id/status", adminMiddleware, async (req, res) => {
   }
 });
 
-// ====================================================
-// МАРШРУТЫ ОТЗЫВОВ (Лаб 4, разд. 2.6)
-// ====================================================
-
-// Получение отзывов через JOIN с таблицами пользователей и услуг
 app.get("/api/reviews", async (req, res) => {
   const { service_id } = req.query;
   let sql = `
@@ -1151,7 +1056,6 @@ app.get("/api/reviews", async (req, res) => {
   }
 });
 
-// Добавление отзыва (только для авторизованных пользователей)
 app.post("/api/reviews", authMiddleware, async (req, res) => {
   const { service_id, rating, comment } = req.body;
   if (!service_id || !rating || !comment?.trim()) {
@@ -1186,7 +1090,6 @@ app.post("/api/reviews", authMiddleware, async (req, res) => {
   }
 });
 
-// Удаление отзыва за нарушение правил (Администратор)
 app.delete("/api/reviews/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
@@ -1197,11 +1100,6 @@ app.delete("/api/reviews/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// ====================================================
-// УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ (Администратор)
-// ====================================================
-
-// Получение списка всех пользователей через JOIN с таблицей ролей
 app.get("/api/users", adminMiddleware, async (req, res) => {
   try {
     const rows = await queryDB(
@@ -1216,7 +1114,6 @@ app.get("/api/users", adminMiddleware, async (req, res) => {
   }
 });
 
-// Назначение личной скидки пользователю (Администратор)
 app.put("/api/users/:id/personal-discount", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { personal_discount_percent } = req.body;
@@ -1234,11 +1131,6 @@ app.put("/api/users/:id/personal-discount", adminMiddleware, async (req, res) =>
   }
 });
 
-// ====================================================
-// МАРШРУТЫ ПРОМОКОДОВ / КУПОНОВ (Лаб 4)
-// ====================================================
-
-// Получение списка всех промокодов
 app.get("/api/coupons", async (req, res) => {
   try {
     const rows = await queryDB("SELECT * FROM coupons ORDER BY coupon_id DESC");
@@ -1248,7 +1140,6 @@ app.get("/api/coupons", async (req, res) => {
   }
 });
 
-// Проверка и применение промокода клиентом
 app.get("/api/coupons/check/:code", async (req, res) => {
   const { code } = req.params;
   if (!code?.trim()) {
@@ -1268,7 +1159,6 @@ app.get("/api/coupons/check/:code", async (req, res) => {
   }
 });
 
-// Добавление нового промокода (Администратор)
 app.post("/api/coupons", adminMiddleware, async (req, res) => {
   const { code, discount_percent, description } = req.body;
   if (!code?.trim()) {
@@ -1292,7 +1182,6 @@ app.post("/api/coupons", adminMiddleware, async (req, res) => {
   }
 });
 
-// Изменение скидки / активности промокода (Администратор)
 app.put("/api/coupons/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { discount_percent, description, is_active } = req.body;
@@ -1316,7 +1205,6 @@ app.put("/api/coupons/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// Удаление промокода (Администратор)
 app.delete("/api/coupons/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
@@ -1327,7 +1215,6 @@ app.delete("/api/coupons/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// Изменение роли пользователя (Администратор)
 app.put("/api/users/:id/role", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { role_id } = req.body;
@@ -1343,7 +1230,6 @@ app.put("/api/users/:id/role", adminMiddleware, async (req, res) => {
   }
 });
 
-// Удаление пользователя (Администратор)
 app.delete("/api/users/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   if (Number(id) === req.user.user_id) {
@@ -1360,7 +1246,6 @@ app.delete("/api/users/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// Тестовый эндпоинт состояния сервера
 app.get("/api/test", (req, res) => {
   res.json({
     status: "ok",

@@ -12,7 +12,6 @@ const pool = new pg.Pool({
 async function migrate() {
   console.log('Running database migrations...');
 
-  // 1. PostgreSQL migration
   try {
     const client = await pool.connect();
     console.log('Connected to PostgreSQL, applying migrations...');
@@ -33,7 +32,6 @@ async function migrate() {
     await pool.end();
   }
 
-  // 2. SQLite migration
   try {
     try {
       DB.exec("ALTER TABLE services ADD COLUMN stock_quantity INTEGER DEFAULT 15");

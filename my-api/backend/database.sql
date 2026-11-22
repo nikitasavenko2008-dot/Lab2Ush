@@ -1,5 +1,3 @@
--- Скрипт инициализации базы данных для ресторанного кейтеринга (Лабораторная №4)
-
 DROP TABLE IF EXISTS reviews CASCADE;
 DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
@@ -13,20 +11,17 @@ DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS roles CASCADE;
 
--- 1. Таблица ролей
 CREATE TABLE roles (
     role_id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
--- 2. Таблица категорий услуг
 CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE
 );
 CREATE UNIQUE INDEX idx_categories_lower_name ON categories (LOWER(name));
 
--- 3. Таблица пользователей
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
@@ -39,7 +34,6 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3.1 Таблица промокодов (купонов)
 CREATE TABLE IF NOT EXISTS coupons (
     coupon_id SERIAL PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
@@ -55,7 +49,6 @@ INSERT INTO coupons (code, discount_percent, description) VALUES
 ('FESTIVAL20', 20, 'Праздничный промокод')
 ON CONFLICT (code) DO NOTHING;
 
--- 4. Таблица услуг ресторана / кейтеринга
 CREATE TABLE services (
     service_id SERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -68,7 +61,6 @@ CREATE TABLE services (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. Серверная корзина пользователей (уникальная для каждого пользователя)
 CREATE TABLE cart_items (
     cart_item_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -78,7 +70,6 @@ CREATE TABLE cart_items (
     UNIQUE (user_id, service_id)
 );
 
--- 6. Заказы пользователей
 CREATE TABLE orders (
     order_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
@@ -91,7 +82,6 @@ CREATE TABLE orders (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7. Позиции заказов (связь с услугами)
 CREATE TABLE order_items (
     order_item_id SERIAL PRIMARY KEY,
     order_id INT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
@@ -100,7 +90,6 @@ CREATE TABLE order_items (
     price NUMERIC NOT NULL
 );
 
--- 8. Отзывы на услуги
 CREATE TABLE reviews (
     review_id SERIAL PRIMARY KEY,
     service_id INT NOT NULL REFERENCES services(service_id) ON DELETE CASCADE,
@@ -110,7 +99,6 @@ CREATE TABLE reviews (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 9. Восстановление пароля (коды сброса)
 CREATE TABLE password_resets (
     reset_id SERIAL PRIMARY KEY,
     email VARCHAR(150) NOT NULL,
@@ -118,7 +106,6 @@ CREATE TABLE password_resets (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Наполнение данными
 INSERT INTO roles (role_id, name) VALUES 
 (1, 'admin'),
 (2, 'user');
@@ -151,7 +138,6 @@ INSERT INTO services (service_id, name, description, duration, price, category_i
 (10, 'Крафтовая лимонадная станция', 'Стеклянные диспенсеры с охлажденными крафтовыми лимонадами (клубника-базилик, маракуйя-мята, огуречный тархун), бокалы и свежие фрукты.', 180, 6500, 4, 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600&auto=format&fit=crop&q=80');
 SELECT setval('services_service_id_seq', 10);
 
--- Начальные отзывы
 INSERT INTO reviews (service_id, user_id, rating, comment) VALUES
 (1, 2, 5, 'Шеф-повар приготовил потрясающий ужин на день рождения! Гости в полном восторге от подачи и вкуса стейков.'),
 (2, 3, 5, 'Официанты прибыли вовремя в идеальной форме, работали слаженно и незаметно для гостей. Большое спасибо!'),
@@ -159,7 +145,6 @@ INSERT INTO reviews (service_id, user_id, rating, comment) VALUES
 (4, 3, 4, 'Закуски очень свежие и аппетитные, канапе просто таяли во рту. Рекомендуем для деловых встреч.'),
 (5, 2, 5, 'Мясо прожарено идеально, овощи-гриль с ароматными травами. Шефу отдельная благодарность!');
 
--- Начальные заказы для клиента Иван Заказчиков
 INSERT INTO orders (order_id, user_id, delivery_address, delivery_date, delivery_time, total_amount, status, notes) VALUES
 (1, 2, 'г. Москва, Ленинский проспект, д. 45, кв. 12', CURRENT_DATE - INTERVAL '5 days', '14:00', 22000, 'Выполнен', 'Вход со двора, код домофона 45К'),
 (2, 2, 'г. Москва, Ленинский проспект, д. 45, кв. 12', CURRENT_DATE + INTERVAL '2 days', '16:00', 19000, 'В обработке', 'Позвонить за 1 час до прибытия');
@@ -171,6 +156,5 @@ INSERT INTO order_items (order_id, service_id, quantity, price) VALUES
 (2, 3, 1, 12000),
 (2, 2, 1, 7000);
 
--- Пример позиции в серверной корзине Ивана
 INSERT INTO cart_items (user_id, service_id, quantity) VALUES
 (2, 4, 1);

@@ -1,4 +1,4 @@
-// Модуль локальной базы данных SQLite (резервный источник при отсутствии подключения к PostgreSQL)
+
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB = new DatabaseSync(path.join(__dirname, "restaurant.db"));
 
-// Инициализация структуры таблиц
 function initDB() {
   DB.exec(`
     CREATE TABLE IF NOT EXISTS roles (
@@ -119,7 +118,7 @@ function initDB() {
   try {
     DB.exec("ALTER TABLE services ADD COLUMN discount_percent INTEGER DEFAULT 0");
   } catch (e) {
-    // Колонка уже существует
+
   }
 
   try {
@@ -145,7 +144,7 @@ function initDB() {
   try {
     DB.exec("ALTER TABLE users ADD COLUMN personal_discount_percent INTEGER DEFAULT 0");
   } catch (e) {
-    // Колонка уже существует
+
   }
 
   try {
@@ -159,7 +158,6 @@ function initDB() {
   } catch (e) {}
 }
 
-// Начальное наполнение данными
 function seedDB() {
   const insertRole = DB.prepare("INSERT INTO roles (role_id, name) VALUES (?, ?)");
   insertRole.run(1, "admin");

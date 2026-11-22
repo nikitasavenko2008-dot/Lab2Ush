@@ -1,8 +1,4 @@
-/**
- * Компонент фильтрации каталога (Лаб 4, разд. 2.1)
- * Фильтрует по категориям (подгружаемым через API c JOIN),
- * а также по диапазону цен и строке поиска.
- */
+
 import "./CategoryFilter.css";
 
 export default function CategoryFilter({

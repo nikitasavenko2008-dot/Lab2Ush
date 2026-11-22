@@ -1,11 +1,4 @@
-/**
- * Страница Каталога услуг «Royal Catering»
- * Лабораторная работа №4 — Студент: Никита Савенко
- * 
- * Выполняет получение услуг через API (все данные и связи подтянуты строго через SQL JOIN),
- * фильтрацию по категориям, ценам и строке поиска,
- * а также открывает модальное окно с отзывами о выбранной услуге.
- */
+
 import { useEffect, useState, useCallback } from "react";
 import { apiGet } from "../api";
 import { useShop } from "../context/ShopContext";
@@ -24,16 +17,13 @@ export default function Catalog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Фильтры
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Модальное окно отзывов
   const [reviewService, setReviewService] = useState(null);
 
-  // Загрузка категорий с сервера API
   const loadCategories = async () => {
     try {
       const cats = await apiGet("/api/categories");
@@ -43,7 +33,6 @@ export default function Catalog() {
     }
   };
 
-  // Загрузка списка услуг через API с передачей параметров фильтрации
   const loadServices = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -149,7 +138,6 @@ export default function Catalog() {
         </main>
       </div>
 
-      {/* Модальное окно отзывов */}
       {reviewService && (
         <ReviewModal
           service={reviewService}

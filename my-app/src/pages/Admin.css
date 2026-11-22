@@ -1,4 +1,4 @@
-/* Стили панели администратора и модальных окон */
+
 
 .admin-container {
   max-width: 1250px;
@@ -51,7 +51,7 @@ body.dark .admin-success-alert {
   color: #86efac;
 }
 
-/* Вкладки разделов */
+
 .admin-tabs-row {
   display: flex;
   gap: 0.4rem;
@@ -101,7 +101,7 @@ body.dark .admin-tab-btn.active {
   color: white;
 }
 
-/* Панель инструментов: поиск и кнопка действия */
+
 .admin-toolbar {
   display: flex;
   justify-content: space-between;
@@ -179,7 +179,7 @@ body.dark .admin-search-input {
   transform: translateY(-1px);
 }
 
-/* Карточка таблицы */
+
 .admin-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -235,7 +235,7 @@ body.dark .admin-data-table th {
   padding: 2.5rem !important;
 }
 
-/* Картинки в таблице товаров и отзывов */
+
 .table-row-img {
   width: 52px;
   height: 52px;
@@ -417,7 +417,7 @@ body.dark .edit-action-btn {
   color: #dc2626;
 }
 
-/* Заказы в таблице */
+
 .order-items-count-badge {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -488,7 +488,7 @@ body.dark .order-items-count-badge {
   background: #1d4ed8;
 }
 
-/* Отзывы: модерация */
+
 .star-rating-pill {
   background: #fffbeb;
   color: #b45309;
@@ -531,9 +531,9 @@ body.dark .review-comment-text {
   color: white;
 }
 
-/* ======================================================= */
-/* СТИЛИ МОДАЛЬНЫХ ОКОН */
-/* ======================================================= */
+
+
+
 .admin-modal-overlay {
   position: fixed;
   top: 0;
@@ -665,7 +665,7 @@ body.dark .form-group textarea {
   border-color: #2563eb;
 }
 
-/* Блок предпросмотра фото в модалке */
+
 .photo-preview-group {
   background: #f8fafc;
   padding: 1rem;
@@ -759,7 +759,7 @@ body.dark .modal-cancel-btn {
   color: #cbd5e1;
 }
 
-/* Модалка деталей заказа */
+
 .order-modal-content {
   padding: 1.5rem;
   display: flex;

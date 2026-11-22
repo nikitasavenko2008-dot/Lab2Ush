@@ -1,19 +1,11 @@
-/**
- * Контекст приложения «ShopContext»
- * Управляет состоянием авторизации, серверной корзиной покупок и темой оформления.
- * 
- * В соответствии с требованиями лабораторной работы №4:
- * 1. Корзина хранится на сервере в базе данных (cart_items).
- * 2. Корзина уникальна для каждого пользователя и сохраняется при выходе из аккаунта.
- * 3. Все изменения корзины синхронизируются через API (/api/cart).
- */
+
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { apiGet, apiPost, apiPut, apiDelete } from "../api";
 
 const ShopContext = createContext();
 
 export function ShopProvider({ children }) {
-  // Состояние авторизации (токен и объект пользователя)
+
   const [auth, setAuth] = useState(() => {
     try {
       const saved = localStorage.getItem("auth");
@@ -23,12 +15,10 @@ export function ShopProvider({ children }) {
     }
   });
 
-  // Состояние серверной корзины пользователя
   const [cart, setCart] = useState([]);
   const [cartLoading, setCartLoading] = useState(false);
   const [cartError, setCartError] = useState(null);
 
-  // Тема оформления (светлая / темная)
   const [isDark, setIsDark] = useState(() => {
     try {
       return localStorage.getItem("theme") === "dark";
@@ -37,7 +27,6 @@ export function ShopProvider({ children }) {
     }
   });
 
-  // При изменении темы переключаем класс dark на теге <html> и <body>
   useEffect(() => {
     localStorage.setItem("theme", isDark ? "dark" : "light");
     if (isDark) {
@@ -51,7 +40,6 @@ export function ShopProvider({ children }) {
 
   const toggleTheme = () => setIsDark((prev) => !prev);
 
-  // Загрузка серверной корзины при авторизации пользователя
   const fetchCart = useCallback(async (token) => {
     if (!token) {
       setCart([]);
@@ -69,7 +57,6 @@ export function ShopProvider({ children }) {
     }
   }, []);
 
-  // Синхронизация состояния авторизации с LocalStorage и загрузка корзины
   useEffect(() => {
     if (auth.token) {
       localStorage.setItem("auth", JSON.stringify(auth));
@@ -80,7 +67,6 @@ export function ShopProvider({ children }) {
     }
   }, [auth, fetchCart]);
 
-  // Слушатель события истечения/недействительности токена
   useEffect(() => {
     const onAuthExpired = () => {
       setAuth({ token: null, user: null });
@@ -90,7 +76,6 @@ export function ShopProvider({ children }) {
     return () => window.removeEventListener("auth-expired", onAuthExpired);
   }, []);
 
-  // Добавление услуги в серверную корзину
   const addToCart = async (service, quantity = 1) => {
     if (!auth.token) {
       return { error: "Для добавления услуги в корзину необходимо войти в аккаунт" };
@@ -108,7 +93,6 @@ export function ShopProvider({ children }) {
     }
   };
 
-  // Изменение количества позиции в корзине
   const updateQty = async (cartItemId, newQuantity) => {
     if (!auth.token) return;
     try {
@@ -128,7 +112,6 @@ export function ShopProvider({ children }) {
     }
   };
 
-  // Удаление позиции из корзины
   const removeFromCart = async (cartItemId) => {
     if (!auth.token) return;
     try {
@@ -139,7 +122,6 @@ export function ShopProvider({ children }) {
     }
   };
 
-  // Полная очистка корзины (после оформления заказа или по кнопке пользователя)
   const clearCart = async () => {
     if (!auth.token) {
       setCart([]);
@@ -153,18 +135,15 @@ export function ShopProvider({ children }) {
     }
   };
 
-  // Авторизация
   const login = (token, user) => {
     setAuth({ token, user });
   };
 
-  // Выход из аккаунта (согласно требованиям, данные корзины остаются сохраненными на сервере в БД)
   const logout = () => {
     setAuth({ token: null, user: null });
     setCart([]);
   };
 
-  // Обновление профиля пользователя
   const updateUser = (updatedUser, updatedToken) => {
     setAuth((prev) => ({
       token: updatedToken || prev.token,
@@ -172,10 +151,8 @@ export function ShopProvider({ children }) {
     }));
   };
 
-  // Подсчет общего количества позиций в корзине
   const cartCount = cart.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0);
 
-  // Подсчет общей суммы корзины с учетом персональных скидок на услуги
   const cartTotal = cart.reduce((sum, item) => {
     const rawPrice = Number(item.price) || 0;
     const discount = Number(item.discount_percent) || 0;
