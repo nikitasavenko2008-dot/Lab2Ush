@@ -44,16 +44,45 @@ pool.connect((err, client, release) => {
 });
 
 /**
+ * Заменяет подстановочные знаки '?' на '$1', '$2' для PostgreSQL,
+ * корректно игнорируя знаки '?' внутри строковых литералов (например в URL картинок).
+ */
+function convertSqlPlaceholders(sql) {
+  let result = "";
+  let inString = false;
+  let quoteChar = "";
+  let paramIndex = 1;
+
+  for (let i = 0; i < sql.length; i++) {
+    const char = sql[i];
+    if (!inString && (char === "'" || char === '"')) {
+      inString = true;
+      quoteChar = char;
+      result += char;
+    } else if (inString && char === quoteChar) {
+      if (sql[i + 1] === quoteChar) {
+        result += char + quoteChar;
+        i++;
+      } else {
+        inString = false;
+        result += char;
+      }
+    } else if (!inString && char === "?") {
+      result += `$${paramIndex++}`;
+    } else {
+      result += char;
+    }
+  }
+  return result;
+}
+
+/**
  * Универсальная функция выполнения SQL-запросов
  * Поддерживает как PostgreSQL ($1, $2), так и SQLite (?)
  */
 async function queryDB(sql, params = []) {
   if (usePostgres) {
-    let pgSql = sql;
-    let i = 1;
-    while (pgSql.includes("?")) {
-      pgSql = pgSql.replace("?", `$${i++}`);
-    }
+    const pgSql = convertSqlPlaceholders(sql);
     const res = await pool.query(pgSql, params);
     return res.rows;
   } else {
@@ -939,7 +968,7 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
     let couponDiscountPercent = 0;
     if (coupon_code?.trim()) {
       const cpnRows = await queryDB(
-        "SELECT * FROM coupons WHERE UPPER(code) = UPPER(?) AND (is_active = TRUE OR is_active = 1)",
+        "SELECT * FROM coupons WHERE UPPER(code) = UPPER(?) AND is_active = TRUE",
         [coupon_code.trim()]
       );
       if (cpnRows.length > 0) {
@@ -1227,7 +1256,7 @@ app.get("/api/coupons/check/:code", async (req, res) => {
   }
   try {
     const rows = await queryDB(
-      "SELECT * FROM coupons WHERE UPPER(code) = UPPER(?) AND (is_active = TRUE OR is_active = 1)",
+      "SELECT * FROM coupons WHERE UPPER(code) = UPPER(?) AND is_active = TRUE",
       [code.trim()]
     );
     if (rows.length === 0) {
