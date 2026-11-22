@@ -322,9 +322,10 @@ app.post("/api/auth/forgot-password", async (req, res) => {
     await queryDB("INSERT INTO password_resets (email, code) VALUES (?, ?)", [email.trim().toLowerCase(), code]);
 
     res.json({
-      message: "Код для восстановления пароля успешно сгенерирован",
+      message: "Напишите на почту nikitasavenko2008@gmail.com и мы вам сбросим пароль.",
       code: code,
-      hint: "Для демонстрации лабораторной работы используйте код: 1234",
+      contact_email: "nikitasavenko2008@gmail.com",
+      hint: "Напишите на почту nikitasavenko2008@gmail.com и мы вам сбросим пароль (код для проверки: 1234)",
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

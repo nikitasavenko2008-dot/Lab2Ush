@@ -226,17 +226,31 @@ export default function Login() {
           <>
             <div className="login-card-header">
               <h2>Восстановление пароля</h2>
-              <p>
-                {forgotStep === 1
-                  ? "Введите email, на который зарегистрирован аккаунт"
-                  : "Введите код подтверждения и задайте новый пароль"}
+              <p>Забыли пароль от личного кабинета?</p>
+            </div>
+
+            <div className="forgot-support-card">
+              <span className="support-icon">📧</span>
+              <h3>Служба поддержки</h3>
+              <p className="support-instruction">
+                Напишите на почту <strong>nikitasavenko2008@gmail.com</strong> и мы вам сбросим пароль.
               </p>
+              <a
+                href="mailto:nikitasavenko2008@gmail.com?subject=Восстановление пароля в Royal Catering"
+                className="support-email-pill"
+              >
+                ✉️ nikitasavenko2008@gmail.com
+              </a>
+            </div>
+
+            <div className="forgot-divider">
+              <span>или сбросьте самостоятельно</span>
             </div>
 
             {forgotStep === 1 ? (
               <form onSubmit={handleSendResetCode} className="auth-form">
                 <div className="form-field">
-                  <label>Email аккаунта:</label>
+                  <label>Email вашего аккаунта:</label>
                   <input
                     type="email"
                     value={forgotEmail}
@@ -249,7 +263,7 @@ export default function Login() {
                 {error && <ErrorBox message={error} />}
 
                 <button type="submit" className="login-submit-btn" disabled={loading}>
-                  {loading ? "Отправка кода..." : "Получить код восстановления"}
+                  {loading ? "Отправка..." : "Получить код восстановления"}
                 </button>
               </form>
             ) : (

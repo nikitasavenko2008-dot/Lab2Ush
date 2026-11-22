@@ -260,3 +260,102 @@ body.dark .demo-account-item code {
   background: #334155;
   color: #f8fafc;
 }
+
+/* Карточка службы поддержки по восстановлению пароля */
+.forgot-support-card {
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+body.dark .forgot-support-card {
+  background: #1e3a8a22;
+  border-color: #1e40af;
+}
+
+.support-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.forgot-support-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1e40af;
+}
+
+body.dark .forgot-support-card h3 {
+  color: #93c5fd;
+}
+
+.support-instruction {
+  margin: 0;
+  font-size: 0.92rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
+body.dark .support-instruction {
+  color: #cbd5e1;
+}
+
+.support-instruction strong {
+  color: #0f172a;
+}
+
+body.dark .support-instruction strong {
+  color: #f8fafc;
+}
+
+.support-email-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.45rem 1rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s;
+  margin-top: 0.35rem;
+}
+
+.support-email-pill:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.forgot-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1rem 0;
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.forgot-divider::before,
+.forgot-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+body.dark .forgot-divider::before,
+body.dark .forgot-divider::after {
+  border-bottom-color: #334155;
+}
+
+.forgot-divider span {
+  padding: 0 0.75rem;
+}
