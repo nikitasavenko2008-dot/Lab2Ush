@@ -1268,14 +1268,18 @@ app.put("/api/coupons/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   const { discount_percent, description, is_active } = req.body;
   try {
+    const existing = await queryDB("SELECT * FROM coupons WHERE coupon_id = ?", [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: "Промокод не найден" });
+    }
+    const curr = existing[0];
+    const newDiscount = discount_percent !== undefined ? Number(discount_percent) : curr.discount_percent;
+    const newDesc = description !== undefined ? description : curr.description;
+    const newActive = is_active !== undefined ? Boolean(is_active) : Boolean(curr.is_active);
+
     await queryDB(
-      "UPDATE coupons SET discount_percent = COALESCE(?, discount_percent), description = COALESCE(?, description), is_active = COALESCE(?, is_active) WHERE coupon_id = ?",
-      [
-        discount_percent !== undefined ? Number(discount_percent) : null,
-        description !== undefined ? description : null,
-        is_active !== undefined ? is_active : null,
-        id,
-      ]
+      "UPDATE coupons SET discount_percent = ?, description = ?, is_active = ? WHERE coupon_id = ?",
+      [newDiscount, newDesc, newActive, id]
     );
     res.json({ success: true, message: "Промокод успешно обновлен" });
   } catch (err) {
