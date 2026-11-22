@@ -45,6 +45,8 @@ export default function ServiceCard({ service, onOpenReviews }) {
   const finalPrice = hasDiscount
     ? Math.round(Number(service.price) * (1 - discountPercent / 100))
     : Number(service.price);
+  const stock = service.stock_quantity !== undefined ? Number(service.stock_quantity) : 15;
+  const isOutOfStock = stock <= 0;
 
   return (
     <div className="service-card">
@@ -68,6 +70,12 @@ export default function ServiceCard({ service, onOpenReviews }) {
 
         <h3 className="card-title">{service.name}</h3>
         <p className="card-desc">{service.description}</p>
+
+        <div className="card-stock-info">
+          <span className={`stock-tag ${isOutOfStock ? "stock-out" : ""}`}>
+            {isOutOfStock ? "✕ Нет в наличии" : `📦 В наличии: ${stock} шт.`}
+          </span>
+        </div>
 
         <div className="card-bottom-row">
           <div className="card-price-container">
@@ -94,10 +102,11 @@ export default function ServiceCard({ service, onOpenReviews }) {
             {!isAdmin && (
               <button
                 type="button"
-                className={`card-add-btn ${addedNotice ? "success" : ""}`}
+                className={`card-add-btn ${addedNotice ? "success" : ""} ${isOutOfStock ? "disabled" : ""}`}
                 onClick={handleAddToCart}
+                disabled={isOutOfStock}
               >
-                {addedNotice ? "✓ В корзине" : "+ В корзину"}
+                {isOutOfStock ? "Закончилось" : addedNotice ? "✓ В корзине" : "+ В корзину"}
               </button>
             )}
           </div>

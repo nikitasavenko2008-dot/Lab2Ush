@@ -25,6 +25,13 @@ async function handleResponse(res) {
       err = { error: text || res.statusText };
     }
 
+    if (res.status === 401) {
+      try {
+        localStorage.removeItem("auth");
+        window.dispatchEvent(new CustomEvent("auth-expired", { detail: err.error }));
+      } catch (_) {}
+    }
+
     if (
       err.error === "Bad Gateway" ||
       String(err.error).includes("Bad Gateway") ||

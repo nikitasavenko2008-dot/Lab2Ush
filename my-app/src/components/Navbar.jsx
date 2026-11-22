@@ -56,7 +56,7 @@ export default function Navbar() {
                 {isAdmin && <span className="admin-chip">Админ</span>}
               </span>
               <button className="logout-btn" onClick={logout} title="Выйти из системы">
-                Выйти
+                🚪 Выйти
               </button>
             </div>
           ) : (

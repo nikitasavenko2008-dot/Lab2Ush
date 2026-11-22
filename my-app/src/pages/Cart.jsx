@@ -142,6 +142,7 @@ export default function Cart() {
           delivery_date: deliveryDate,
           delivery_time: deliveryTime,
           notes: orderNotes,
+          coupon_code: appliedPromo ? appliedPromo.code : "",
         },
         auth.token
       );
@@ -268,7 +269,9 @@ export default function Cart() {
                   const effectiveUnitPrice =
                     discountPercent > 0 ? Math.round(rawPrice * (1 - discountPercent / 100)) : rawPrice;
                   const itemQty = Number(item.quantity) || 1;
+                  const itemStock = item.stock_quantity !== undefined ? Number(item.stock_quantity) : 15;
                   const itemTotal = effectiveUnitPrice * itemQty;
+                  const isMaxStock = itemQty >= itemStock;
 
                   return (
                     <div key={item.cart_item_id} className="cart-item-row">
@@ -279,10 +282,14 @@ export default function Cart() {
                         }
                         alt={item.name}
                         className="cart-item-img"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://images.unsplash.com/photo-1555244162-803834f70033?w=300&auto=format&fit=crop&q=80";
+                        }}
                       />
 
                       <div className="cart-item-info">
-                        <span className="cart-item-category">{item.category_name}</span>
+                        <span className="cart-item-category">{item.category_name || "Без категории"}</span>
                         <h4 className="cart-item-title">{item.name}</h4>
                         <div className="cart-item-meta">
                           <span>⏱ {item.duration} мин</span>
@@ -301,6 +308,9 @@ export default function Cart() {
                               `${rawPrice.toLocaleString("ru-RU")} ₽ / позиция`
                             )}
                           </span>
+                          <span className="cart-item-stock-tag">
+                            В наличии: {itemStock} шт.
+                          </span>
                         </div>
                       </div>
 
@@ -316,9 +326,14 @@ export default function Cart() {
                         <span className="qty-counter">{itemQty}</span>
                         <button
                           type="button"
-                          className="qty-btn plus"
-                          onClick={() => updateQty(item.cart_item_id, itemQty + 1)}
-                          title="Увеличить количество"
+                          className={`qty-btn plus ${isMaxStock ? "disabled" : ""}`}
+                          onClick={() => {
+                            if (!isMaxStock) {
+                              updateQty(item.cart_item_id, itemQty + 1);
+                            }
+                          }}
+                          disabled={isMaxStock}
+                          title={isMaxStock ? "Достигнут максимум наличия на складе" : "Увеличить количество"}
                         >
                           +
                         </button>

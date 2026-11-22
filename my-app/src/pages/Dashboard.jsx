@@ -96,14 +96,47 @@ export default function Dashboard() {
     );
   }
 
-  // Обработка сохранения профиля
+  // Обработка сохранения профиля с полной валидацией всех полей
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setProfileError("");
     setProfileSuccess("");
 
-    if (!profileForm.name.trim() || !profileForm.email.trim() || !profileForm.phone.trim()) {
-      setProfileError("Поля ФИО, Email и телефон обязательны для заполнения");
+    if (!profileForm.name.trim()) {
+      setProfileError("Укажите ваше полное имя (ФИО)");
+      return;
+    }
+    if (profileForm.name.trim().length < 2) {
+      setProfileError("Имя должно содержать не менее 2 символов");
+      return;
+    }
+
+    if (!profileForm.email.trim()) {
+      setProfileError("Укажите адрес электронной почты");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(profileForm.email.trim())) {
+      setProfileError("Введите корректный адрес электронной почты (например ivan@mail.ru)");
+      return;
+    }
+
+    if (!profileForm.phone.trim()) {
+      setProfileError("Укажите контактный номер телефона");
+      return;
+    }
+    const digitsOnly = profileForm.phone.replace(/\D/g, "");
+    if (digitsOnly.length < 10) {
+      setProfileError("Номер телефона должен содержать минимум 10 цифр");
+      return;
+    }
+
+    if (!profileForm.address.trim()) {
+      setProfileError("Укажите адрес доставки / выезда по умолчанию");
+      return;
+    }
+    if (profileForm.address.trim().length < 5) {
+      setProfileError("Адрес должен содержать не менее 5 символов");
       return;
     }
 
@@ -120,19 +153,28 @@ export default function Dashboard() {
     }
   };
 
-  // Обработка смены пароля
+  // Обработка смены пароля с валидацией
   const handleSavePassword = async (e) => {
     e.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
 
-    if (!passwordForm.current_password.trim() || !passwordForm.new_password.trim()) {
-      setPasswordError("Укажите текущий и новый пароль");
+    if (!passwordForm.current_password.trim()) {
+      setPasswordError("Введите ваш текущий пароль");
+      return;
+    }
+    if (!passwordForm.new_password.trim()) {
+      setPasswordError("Введите новый пароль");
       return;
     }
 
     if (passwordForm.new_password.length < 5) {
       setPasswordError("Новый пароль должен содержать минимум 5 символов");
+      return;
+    }
+
+    if (passwordForm.new_password === passwordForm.current_password) {
+      setPasswordError("Новый пароль не должен совпадать с текущим");
       return;
     }
 
@@ -153,7 +195,7 @@ export default function Dashboard() {
       );
       setPasswordSuccess(res.message || "Пароль успешно изменен!");
       setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
-      setTimeout(() => setPasswordSuccess(""), 4000);
+      setTimeout(() => setProfileSuccess(""), 4000);
     } catch (err) {
       setPasswordError(err.message || "Не удалось изменить пароль");
     } finally {
@@ -290,6 +332,22 @@ export default function Dashboard() {
                       <span className="detail-label">Адрес выезда / проведения:</span>
                       <span className="detail-value">📍 {order.delivery_address}</span>
                     </div>
+                    {order.coupon_code && (
+                      <div className="order-detail-item">
+                        <span className="detail-label">Примененный промокод:</span>
+                        <span className="detail-value" style={{ color: "#16a34a", fontWeight: "bold" }}>
+                          🎟 {order.coupon_code} (-{order.coupon_discount_percent}%)
+                        </span>
+                      </div>
+                    )}
+                    {Number(order.personal_discount_percent) > 0 && (
+                      <div className="order-detail-item">
+                        <span className="detail-label">Личная скидка клиента:</span>
+                        <span className="detail-value" style={{ color: "#2563eb", fontWeight: "bold" }}>
+                          👤 -{order.personal_discount_percent}%
+                        </span>
+                      </div>
+                    )}
                     {order.notes && (
                       <div className="order-detail-item">
                         <span className="detail-label">Пожелания / Заметки:</span>
@@ -311,9 +369,15 @@ export default function Dashboard() {
                       {order.items?.map((item) => (
                         <div key={item.order_item_id} className="service-row-item">
                           <div className="service-name-cell">
-                            {item.image && (
-                              <img src={item.image} alt={item.service_name} className="service-row-thumb" />
-                            )}
+                            <img
+                              src={item.image || "https://images.unsplash.com/photo-1555244162-803834f70033?w=300&auto=format&fit=crop&q=80"}
+                              alt={item.service_name}
+                              className="service-row-thumb"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "https://images.unsplash.com/photo-1555244162-803834f70033?w=300&auto=format&fit=crop&q=80";
+                              }}
+                            />
                             <div>
                               <strong>{item.service_name}</strong>
                               <small>⏱ {item.duration} мин</small>
@@ -321,7 +385,7 @@ export default function Dashboard() {
                           </div>
 
                           <div className="service-cat-cell">
-                            <span className="cat-chip">{item.category_name}</span>
+                            <span className="cat-chip">{item.category_name || "Без категории"}</span>
                           </div>
 
                           <div className="service-qty-cell">{item.quantity} шт.</div>
@@ -340,6 +404,11 @@ export default function Dashboard() {
                       Оформлен: {order.created_at ? new Date(order.created_at).toLocaleString("ru-RU") : "Недавно"}
                     </span>
                     <div className="order-total-sum">
+                      {Number(order.subtotal_amount) > Number(order.total_amount) && (
+                        <span style={{ fontSize: "0.85rem", color: "#64748b", marginRight: "8px" }}>
+                          Без скидки: <s>{Number(order.subtotal_amount).toLocaleString("ru-RU")} ₽</s>
+                        </span>
+                      )}
                       <span>Итого к оплате:</span>
                       <strong>{Number(order.total_amount).toLocaleString("ru-RU")} ₽</strong>
                     </div>

@@ -41,6 +41,7 @@ function initDB() {
       category_id INTEGER,
       image TEXT,
       discount_percent INTEGER DEFAULT 0,
+      stock_quantity INTEGER DEFAULT 15,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (category_id) REFERENCES categories(category_id)
     );
@@ -63,6 +64,10 @@ function initDB() {
       delivery_date TEXT NOT NULL,
       delivery_time TEXT DEFAULT '12:00',
       total_amount REAL NOT NULL,
+      coupon_code TEXT DEFAULT '',
+      coupon_discount_percent INTEGER DEFAULT 0,
+      personal_discount_percent INTEGER DEFAULT 0,
+      subtotal_amount REAL DEFAULT 0,
       status TEXT DEFAULT 'Новый',
       notes TEXT,
       created_at TEXT DEFAULT (datetime('now')),
@@ -108,10 +113,34 @@ function initDB() {
   `);
 
   try {
+    DB.exec("INSERT OR IGNORE INTO categories (name) VALUES ('Без категории')");
+  } catch (e) {}
+
+  try {
     DB.exec("ALTER TABLE services ADD COLUMN discount_percent INTEGER DEFAULT 0");
   } catch (e) {
     // Колонка уже существует
   }
+
+  try {
+    DB.exec("ALTER TABLE services ADD COLUMN stock_quantity INTEGER DEFAULT 15");
+  } catch (e) {}
+
+  try {
+    DB.exec("ALTER TABLE orders ADD COLUMN coupon_code TEXT DEFAULT ''");
+  } catch (e) {}
+
+  try {
+    DB.exec("ALTER TABLE orders ADD COLUMN coupon_discount_percent INTEGER DEFAULT 0");
+  } catch (e) {}
+
+  try {
+    DB.exec("ALTER TABLE orders ADD COLUMN personal_discount_percent INTEGER DEFAULT 0");
+  } catch (e) {}
+
+  try {
+    DB.exec("ALTER TABLE orders ADD COLUMN subtotal_amount REAL DEFAULT 0");
+  } catch (e) {}
 
   try {
     DB.exec("ALTER TABLE users ADD COLUMN personal_discount_percent INTEGER DEFAULT 0");

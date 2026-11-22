@@ -80,6 +80,16 @@ export function ShopProvider({ children }) {
     }
   }, [auth, fetchCart]);
 
+  // Слушатель события истечения/недействительности токена
+  useEffect(() => {
+    const onAuthExpired = () => {
+      setAuth({ token: null, user: null });
+      setCart([]);
+    };
+    window.addEventListener("auth-expired", onAuthExpired);
+    return () => window.removeEventListener("auth-expired", onAuthExpired);
+  }, []);
+
   // Добавление услуги в серверную корзину
   const addToCart = async (service, quantity = 1) => {
     if (!auth.token) {

@@ -278,6 +278,45 @@ body.dark .card-reviews-btn:hover {
   background: #16a34a;
 }
 
+.card-stock-info {
+  margin-bottom: 0.75rem;
+}
+
+.stock-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+body.dark .stock-tag {
+  background: #064e3b;
+  color: #6ee7b7;
+  border-color: #047857;
+}
+
+.stock-tag.stock-out {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+body.dark .stock-tag.stock-out {
+  background: #450a0a;
+  color: #fca5a5;
+  border-color: #991b1b;
+}
+
+.card-add-btn.disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .card-error-notice {
   margin-top: 0.6rem;
   font-size: 0.8rem;
