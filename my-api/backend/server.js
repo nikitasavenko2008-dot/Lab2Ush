@@ -1286,6 +1286,35 @@ app.put("/api/users/:id/role", adminMiddleware, async (req, res) => {
   }
 });
 
+app.put("/api/users/:id/password", adminMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { new_password } = req.body;
+
+  if (Number(req.user.user_id) !== 1 && req.user.email !== "admin@restaurant.ru") {
+    return res.status(403).json({ error: "Только главный администратор может изменять пароли пользователей" });
+  }
+
+  if (!new_password || !new_password.trim()) {
+    return res.status(400).json({ error: "Укажите новый пароль" });
+  }
+
+  if (new_password.trim().length < 5) {
+    return res.status(400).json({ error: "Пароль должен содержать минимум 5 символов" });
+  }
+
+  try {
+    const targetUser = await queryDB("SELECT user_id, email, name FROM users WHERE user_id = ?", [id]);
+    if (targetUser.length === 0) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+
+    await queryDB("UPDATE users SET password = ? WHERE user_id = ?", [new_password.trim(), id]);
+    res.json({ success: true, message: `Пароль пользователя «${targetUser[0].name}» успешно изменен` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.delete("/api/users/:id", adminMiddleware, async (req, res) => {
   const { id } = req.params;
   if (Number(id) === req.user.user_id) {

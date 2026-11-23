@@ -351,6 +351,35 @@ body.dark .edit-action-btn {
   color: #cbd5e1;
 }
 
+.password-action-btn {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.password-action-btn:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+body.dark .password-action-btn {
+  background: #1e3a8a33;
+  border-color: #1d4ed8;
+  color: #93c5fd;
+}
+
+body.dark .password-action-btn:hover {
+  background: #1e3a8a66;
+  color: #bfdbfe;
+}
+
 .delete-action-btn {
   background: #fee2e2;
   border: 1px solid #fca5a5;

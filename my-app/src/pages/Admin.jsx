@@ -62,6 +62,10 @@ export default function Admin() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderModalMsg, setOrderModalMsg] = useState("");
 
+  const [passwordModalUser, setPasswordModalUser] = useState(null);
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [passwordModalError, setPasswordModalError] = useState("");
+
   const loadAdminData = useCallback(async () => {
     if (!auth.token || auth.user?.role !== "admin") {
       navigate("/login");
@@ -435,6 +439,37 @@ export default function Admin() {
     }
   };
 
+  const handleOpenPasswordModal = (user) => {
+    setPasswordModalUser(user);
+    setNewUserPassword("");
+    setPasswordModalError("");
+    setActiveModal("userPassword");
+  };
+
+  const handleSaveUserPassword = async (e) => {
+    e.preventDefault();
+    setPasswordModalError("");
+
+    if (!newUserPassword.trim() || newUserPassword.trim().length < 5) {
+      setPasswordModalError("Пароль должен содержать минимум 5 символов");
+      return;
+    }
+
+    try {
+      await apiPut(
+        `/api/users/${passwordModalUser.user_id}/password`,
+        { new_password: newUserPassword.trim() },
+        auth.token
+      );
+      showSuccess(`Пароль для пользователя «${passwordModalUser.name}» успешно изменен`);
+      setActiveModal(null);
+      setPasswordModalUser(null);
+      setNewUserPassword("");
+    } catch (err) {
+      setPasswordModalError(err.message || "Ошибка смены пароля");
+    }
+  };
+
   const filteredServices = services.filter((s) => {
     const term = searchService.toLowerCase();
     return (
@@ -482,6 +517,8 @@ export default function Admin() {
       u.phone.toLowerCase().includes(term)
     );
   });
+
+  const isMainAdmin = auth.user?.user_id === 1 || auth.user?.email === "admin@restaurant.ru";
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -1108,19 +1145,32 @@ export default function Admin() {
                             </select>
                           </td>
                           <td>
-                            {u.user_id === 1 || u.email === "admin@restaurant.ru" ? (
-                              <span style={{ color: "#94a3b8", fontSize: "13px" }}>Защищено</span>
-                            ) : u.user_id !== auth.user?.user_id ? (
-                              <button
-                                className="delete-action-btn"
-                                onClick={() => handleDeleteUser(u.user_id, u.name)}
-                                title="Удалить пользователя"
-                              >
-                                🗑️ Удалить
-                              </button>
-                            ) : (
-                              <span className="self-user-chip">Текущий аккаунт</span>
-                            )}
+                            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                              {isMainAdmin && (
+                                <button
+                                  type="button"
+                                  className="password-action-btn"
+                                  onClick={() => handleOpenPasswordModal(u)}
+                                  title="Сменить пароль пользователя"
+                                >
+                                  🔑 Пароль
+                                </button>
+                              )}
+                              {u.user_id === 1 || u.email === "admin@restaurant.ru" ? (
+                                <span style={{ color: "#94a3b8", fontSize: "13px" }}>Защищено</span>
+                              ) : u.user_id !== auth.user?.user_id ? (
+                                <button
+                                  type="button"
+                                  className="delete-action-btn"
+                                  onClick={() => handleDeleteUser(u.user_id, u.name)}
+                                  title="Удалить пользователя"
+                                >
+                                  🗑️ Удалить
+                                </button>
+                              ) : (
+                                <span className="self-user-chip">Текущий аккаунт</span>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1525,6 +1575,49 @@ export default function Admin() {
                 Закрыть
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeModal === "userPassword" && passwordModalUser && (
+        <div className="admin-modal-overlay" onClick={() => setActiveModal(null)}>
+          <div className="admin-modal-window modal-compact" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Смена пароля пользователя</h3>
+              <button className="modal-close-btn" onClick={() => setActiveModal(null)}>✕</button>
+            </div>
+
+            {passwordModalError && <ErrorBox message={passwordModalError} />}
+
+            <form onSubmit={handleSaveUserPassword} className="modal-form-body">
+              <div className="form-group">
+                <label>Пользователь:</label>
+                <div style={{ padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", fontSize: "14px", color: "#334155" }}>
+                  <strong>{passwordModalUser.name}</strong> ({passwordModalUser.email})
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>Новый пароль *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Минимум 5 символов"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              <div className="modal-actions-row">
+                <button type="button" className="modal-cancel-btn" onClick={() => setActiveModal(null)}>
+                  Отмена
+                </button>
+                <button type="submit" className="primary-action-btn">
+                  Сохранить пароль
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
