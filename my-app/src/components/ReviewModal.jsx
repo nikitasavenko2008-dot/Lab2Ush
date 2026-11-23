@@ -114,7 +114,11 @@ export default function ReviewModal({ service, onClose, auth, onReviewAdded }) {
 
           <div className="add-review-section">
             <h4>Оставить отзыв</h4>
-            {auth.user ? (
+            {auth.user?.role === "admin" ? (
+              <div className="admin-no-review-box">
+                <p>Администраторы не могут оставлять отзывы к услугам.</p>
+              </div>
+            ) : auth.user ? (
               <form onSubmit={handleSubmitReview} className="add-review-form">
                 {formError && <div className="form-alert error">{formError}</div>}
                 {successMsg && <div className="form-alert success">{successMsg}</div>}

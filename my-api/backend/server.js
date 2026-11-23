@@ -1105,6 +1105,10 @@ app.get("/api/reviews", async (req, res) => {
 });
 
 app.post("/api/reviews", authMiddleware, async (req, res) => {
+  if (req.user?.role === "admin") {
+    return res.status(403).json({ error: "Администраторы не могут оставлять отзывы" });
+  }
+
   const { service_id, rating, comment } = req.body;
   if (!service_id || !rating || !comment?.trim()) {
     return res.status(400).json({ error: "Заполните оценку (1-5) и текст отзыва" });
