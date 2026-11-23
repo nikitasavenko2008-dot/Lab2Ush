@@ -16,10 +16,6 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [forgotSuccess, setForgotSuccess] = useState("");
-
   async function handleSubmitLogin(e) {
     e.preventDefault();
     setError("");
@@ -57,46 +53,6 @@ export default function Login() {
     }
   }
 
-  async function handleResetPassword(e) {
-    e.preventDefault();
-    setError("");
-    setForgotSuccess("");
-
-    if (!forgotEmail.trim()) {
-      setError("Введите email для сброса пароля");
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(forgotEmail.trim())) {
-      setError("Некорректный формат адреса электронной почты");
-      return;
-    }
-    if (!newPassword.trim() || newPassword.length < 5) {
-      setError("Новый пароль должен содержать минимум 5 символов");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await apiPost("/api/auth/reset-password", {
-        email: forgotEmail.trim(),
-        new_password: newPassword.trim(),
-      });
-      setForgotSuccess(res.message || "Пароль успешно сброшен!");
-      setEmail(forgotEmail);
-      setPassword("");
-      setTimeout(() => {
-        setMode("login");
-        setForgotSuccess("");
-        setNewPassword("");
-      }, 1500);
-    } catch (err) {
-      setError(err.message || "Ошибка сброса пароля");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="login-page">
       <div className="login-card">
@@ -127,9 +83,7 @@ export default function Login() {
                     className="forgot-link-btn"
                     onClick={() => {
                       setMode("forgot");
-                      setForgotEmail(email);
                       setError("");
-                      setForgotSuccess("");
                     }}
                   >
                     Забыли пароль?
@@ -179,41 +133,6 @@ export default function Login() {
               </a>
             </div>
 
-            <div className="forgot-divider">
-              <span>или сбросьте самостоятельно</span>
-            </div>
-
-            <form onSubmit={handleResetPassword} className="auth-form">
-              <div className="form-field">
-                <label>Email вашего аккаунта:</label>
-                <input
-                  type="email"
-                  value={forgotEmail}
-                  placeholder="ivan@mail.ru"
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-field">
-                <label>Новый пароль:</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  placeholder="Минимум 5 символов"
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                />
-              </div>
-
-              {error && <ErrorBox message={error} />}
-              {forgotSuccess && <div className="forgot-success-box">{forgotSuccess}</div>}
-
-              <button type="submit" className="login-submit-btn" disabled={loading}>
-                {loading ? "Сохранение..." : "Сбросить пароль"}
-              </button>
-            </form>
-
             <div className="auth-footer-prompt">
               <button
                 type="button"
@@ -221,7 +140,6 @@ export default function Login() {
                 onClick={() => {
                   setMode("login");
                   setError("");
-                  setForgotSuccess("");
                 }}
               >
                 ← Вернуться к форме входа
