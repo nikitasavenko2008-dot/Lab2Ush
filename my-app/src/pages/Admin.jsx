@@ -344,6 +344,11 @@ export default function Admin() {
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    const targetOrder = orders.find((o) => o.order_id === orderId);
+    if (targetOrder && (targetOrder.status === "Выполнен" || targetOrder.status === "Отменен")) {
+      alert(`Заказ №${orderId} уже имеет статус «${targetOrder.status}» и не подлежит изменению.`);
+      return;
+    }
     try {
       await apiPut(`/api/orders/${orderId}/status`, { status: newStatus }, auth.token);
       setOrders((prev) =>
@@ -897,17 +902,23 @@ export default function Admin() {
                               )}
                             </td>
                             <td>
-                              <select
-                                className={`order-status-select ${getStatusClass(o.status)}`}
-                                value={o.status}
-                                onChange={(e) => handleUpdateOrderStatus(o.order_id, e.target.value)}
-                              >
-                                <option value="Новый">Новый</option>
-                                <option value="В обработке">В обработке</option>
-                                <option value="Подтвержден">Подтвержден</option>
-                                <option value="Выполнен">Выполнен</option>
-                                <option value="Отменен">Отменен</option>
-                              </select>
+                              {o.status === "Выполнен" || o.status === "Отменен" ? (
+                                <span className={`status-badge ${getStatusClass(o.status)}`} title="Финальный статус, изменение заблокировано">
+                                  {o.status}
+                                </span>
+                              ) : (
+                                <select
+                                  className={`order-status-select ${getStatusClass(o.status)}`}
+                                  value={o.status}
+                                  onChange={(e) => handleUpdateOrderStatus(o.order_id, e.target.value)}
+                                >
+                                  <option value="Новый">Новый</option>
+                                  <option value="В обработке">В обработке</option>
+                                  <option value="Подтвержден">Подтвержден</option>
+                                  <option value="Выполнен">Выполнен</option>
+                                  <option value="Отменен">Отменен</option>
+                                </select>
+                              )}
                             </td>
                             <td>
                               <button
@@ -1387,18 +1398,24 @@ export default function Admin() {
 
               <div className="order-status-control-box">
                 <label><strong>Управление статусом заказа:</strong></label>
-                <div className="status-button-group">
-                  {["Новый", "В обработке", "Подтвержден", "Выполнен", "Отменен"].map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      className={`status-btn-opt ${selectedOrder.status === st ? "active " + getStatusClass(st) : ""}`}
-                      onClick={() => handleUpdateOrderStatus(selectedOrder.order_id, st)}
-                    >
-                      {st}
-                    </button>
-                  ))}
-                </div>
+                {selectedOrder.status === "Выполнен" || selectedOrder.status === "Отменен" ? (
+                  <div style={{ padding: "8px 12px", background: "#f1f5f9", borderRadius: "6px", color: "#64748b", fontSize: "14px", marginTop: "6px" }}>
+                    Заказ имеет финальный статус <strong>«{selectedOrder.status}»</strong>. Изменение статуса недоступно.
+                  </div>
+                ) : (
+                  <div className="status-button-group">
+                    {["Новый", "В обработке", "Подтвержден", "Выполнен", "Отменен"].map((st) => (
+                      <button
+                        key={st}
+                        type="button"
+                        className={`status-btn-opt ${selectedOrder.status === st ? "active " + getStatusClass(st) : ""}`}
+                        onClick={() => handleUpdateOrderStatus(selectedOrder.order_id, st)}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="order-details-grid">

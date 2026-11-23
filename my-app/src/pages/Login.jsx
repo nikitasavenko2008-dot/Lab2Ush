@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiPost } from "../api";
@@ -18,10 +17,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotCode, setForgotCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [forgotStep, setForgotStep] = useState(1); 
-  const [forgotHint, setForgotHint] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState("");
 
   async function handleSubmitLogin(e) {
@@ -61,36 +57,18 @@ export default function Login() {
     }
   }
 
-  async function handleSendResetCode(e) {
-    e.preventDefault();
-    setError("");
-    setForgotHint("");
-
-    if (!forgotEmail.trim()) {
-      setError("Введите email для восстановления");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await apiPost("/api/auth/forgot-password", { email: forgotEmail.trim() });
-      setForgotHint(res.hint || `Код подтверждения: ${res.code}`);
-      setForgotCode(res.code || "1234");
-      setForgotStep(2);
-    } catch (err) {
-      setError(err.message || "Ошибка отправки кода восстановления");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function handleResetPassword(e) {
     e.preventDefault();
     setError("");
     setForgotSuccess("");
 
-    if (!forgotCode.trim()) {
-      setError("Введите проверочный код");
+    if (!forgotEmail.trim()) {
+      setError("Введите email для сброса пароля");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(forgotEmail.trim())) {
+      setError("Некорректный формат адреса электронной почты");
       return;
     }
     if (!newPassword.trim() || newPassword.length < 5) {
@@ -102,7 +80,6 @@ export default function Login() {
     try {
       const res = await apiPost("/api/auth/reset-password", {
         email: forgotEmail.trim(),
-        code: forgotCode.trim(),
         new_password: newPassword.trim(),
       });
       setForgotSuccess(res.message || "Пароль успешно сброшен!");
@@ -110,21 +87,15 @@ export default function Login() {
       setPassword("");
       setTimeout(() => {
         setMode("login");
-        setForgotStep(1);
         setForgotSuccess("");
-      }, 2000);
+        setNewPassword("");
+      }, 1500);
     } catch (err) {
-      setError(err.message || "Неверный код сброса пароля");
+      setError(err.message || "Ошибка сброса пароля");
     } finally {
       setLoading(false);
     }
   }
-
-  const fillCredentials = (userEmail, userPass) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-    setError("");
-  };
 
   return (
     <div className="login-page">
@@ -142,7 +113,7 @@ export default function Login() {
                 <input
                   type="email"
                   value={email}
-                  placeholder="admin@restaurant.ru или ivan@mail.ru"
+                  placeholder="Введите ваш email"
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                 />
@@ -158,6 +129,7 @@ export default function Login() {
                       setMode("forgot");
                       setForgotEmail(email);
                       setError("");
+                      setForgotSuccess("");
                     }}
                   >
                     Забыли пароль?
@@ -185,27 +157,8 @@ export default function Login() {
                 Зарегистрироваться
               </Link>
             </div>
-
-            <div className="login-demo-accounts">
-              <div className="demo-accounts-title">Демо-аккаунты для проверки:</div>
-              <div
-                className="demo-account-item"
-                onClick={() => fillCredentials("admin@restaurant.ru", "admin")}
-                title="Нажмите, чтобы подставить"
-              >
-                <strong>👑 Администратор:</strong> admin@restaurant.ru (пароль: <code>admin</code>)
-              </div>
-              <div
-                className="demo-account-item"
-                onClick={() => fillCredentials("ivan@mail.ru", "client")}
-                title="Нажмите, чтобы подставить"
-              >
-                <strong>👤 Клиент:</strong> ivan@mail.ru (пароль: <code>client</code>)
-              </div>
-            </div>
           </>
         ) : (
-
           <>
             <div className="login-card-header">
               <h2>Восстановление пароля</h2>
@@ -230,59 +183,36 @@ export default function Login() {
               <span>или сбросьте самостоятельно</span>
             </div>
 
-            {forgotStep === 1 ? (
-              <form onSubmit={handleSendResetCode} className="auth-form">
-                <div className="form-field">
-                  <label>Email вашего аккаунта:</label>
-                  <input
-                    type="email"
-                    value={forgotEmail}
-                    placeholder="ivan@mail.ru"
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    required
-                  />
-                </div>
+            <form onSubmit={handleResetPassword} className="auth-form">
+              <div className="form-field">
+                <label>Email вашего аккаунта:</label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  placeholder="ivan@mail.ru"
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-                {error && <ErrorBox message={error} />}
+              <div className="form-field">
+                <label>Новый пароль:</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  placeholder="Минимум 5 символов"
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
 
-                <button type="submit" className="login-submit-btn" disabled={loading}>
-                  {loading ? "Отправка..." : "Получить код восстановления"}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleResetPassword} className="auth-form">
-                {forgotHint && <div className="forgot-hint-box">💡 {forgotHint}</div>}
+              {error && <ErrorBox message={error} />}
+              {forgotSuccess && <div className="forgot-success-box">{forgotSuccess}</div>}
 
-                <div className="form-field">
-                  <label>Проверочный код:</label>
-                  <input
-                    type="text"
-                    value={forgotCode}
-                    placeholder="1234"
-                    onChange={(e) => setForgotCode(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label>Новый пароль:</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    placeholder="Минимум 5 символов"
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {error && <ErrorBox message={error} />}
-                {forgotSuccess && <div className="forgot-success-box">{forgotSuccess}</div>}
-
-                <button type="submit" className="login-submit-btn" disabled={loading}>
-                  {loading ? "Сохранение..." : "Установить новый пароль"}
-                </button>
-              </form>
-            )}
+              <button type="submit" className="login-submit-btn" disabled={loading}>
+                {loading ? "Сохранение..." : "Сбросить пароль"}
+              </button>
+            </form>
 
             <div className="auth-footer-prompt">
               <button
@@ -291,6 +221,7 @@ export default function Login() {
                 onClick={() => {
                   setMode("login");
                   setError("");
+                  setForgotSuccess("");
                 }}
               >
                 ← Вернуться к форме входа

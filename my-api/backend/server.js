@@ -328,23 +328,19 @@ app.post("/api/auth/forgot-password", async (req, res) => {
 });
 
 app.post("/api/auth/reset-password", async (req, res) => {
-  const { email, code, new_password } = req.body;
-  if (!email?.trim() || !code?.trim() || !new_password?.trim()) {
-    return res.status(400).json({ error: "Заполните все поля (email, код, новый пароль)" });
+  const { email, new_password } = req.body;
+  if (!email?.trim() || !new_password?.trim()) {
+    return res.status(400).json({ error: "Заполните все поля (email и новый пароль)" });
   }
 
-  if (new_password.length < 5) {
+  if (new_password.trim().length < 5) {
     return res.status(400).json({ error: "Пароль должен содержать минимум 5 символов" });
   }
 
   try {
-    const resets = await queryDB(
-      "SELECT * FROM password_resets WHERE LOWER(email) = LOWER(?) AND code = ? ORDER BY reset_id DESC LIMIT 1",
-      [email.trim(), code.trim()]
-    );
-
-    if (resets.length === 0 && code.trim() !== "1234") {
-      return res.status(400).json({ error: "Неверный код восстановления пароля" });
+    const users = await queryDB("SELECT user_id FROM users WHERE LOWER(email) = LOWER(?)", [email.trim()]);
+    if (users.length === 0) {
+      return res.status(404).json({ error: "Пользователь с указанным email не зарегистрирован" });
     }
 
     await queryDB("UPDATE users SET password = ? WHERE LOWER(email) = LOWER(?)", [new_password.trim(), email.trim()]);
@@ -1014,6 +1010,17 @@ app.put("/api/orders/:id/status", adminMiddleware, async (req, res) => {
   }
 
   try {
+    const existing = await queryDB("SELECT status FROM orders WHERE order_id = ?", [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: "Заказ не найден" });
+    }
+    const currentStatus = existing[0].status;
+    if (currentStatus === "Выполнен" || currentStatus === "Отменен") {
+      return res.status(400).json({
+        error: `Заказ №${id} уже находится в финальном статусе «${currentStatus}». Изменение невозможно.`
+      });
+    }
+
     await queryDB("UPDATE orders SET status = ? WHERE order_id = ?", [status, id]);
     res.json({ success: true, message: `Статус заказа №${id} изменен на "${status}"` });
   } catch (err) {
