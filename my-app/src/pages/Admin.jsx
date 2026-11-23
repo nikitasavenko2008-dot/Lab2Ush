@@ -738,7 +738,6 @@ export default function Admin() {
                   <table className="admin-data-table">
                     <thead>
                       <tr>
-                        <th>ID</th>
                         <th>Наименование категории</th>
                         <th>Услуг и товаров в категории</th>
                         <th>Действия</th>
@@ -749,7 +748,6 @@ export default function Admin() {
                         const isSystemUncat = c.name === "Без категории";
                         return (
                           <tr key={c.category_id}>
-                            <td>#{c.category_id}</td>
                             <td>
                               <strong>{c.name}</strong>
                               {isSystemUncat && (
@@ -1093,7 +1091,6 @@ export default function Admin() {
                   <table className="admin-data-table">
                     <thead>
                       <tr>
-                        <th>ID</th>
                         <th>ФИО и контакты</th>
                         <th>Адрес по умолчанию</th>
                         <th>Роль пользователя</th>
@@ -1104,7 +1101,6 @@ export default function Admin() {
                     <tbody>
                       {filteredUsers.map((u) => (
                         <tr key={u.user_id}>
-                          <td>#{u.user_id}</td>
                           <td>
                             <strong>{u.name}</strong>
                             <br />
