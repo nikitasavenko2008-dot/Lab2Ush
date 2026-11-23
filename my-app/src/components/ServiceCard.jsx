@@ -84,10 +84,10 @@ export default function ServiceCard({ service, onOpenReviews }) {
             )}
           </div>
 
-          <div className="card-actions-wrapper">
+          <div className="card-actions">
             <button
               type="button"
-              className="service-card-btn-secondary"
+              className="card-reviews-btn"
               onClick={onOpenReviews}
             >
               Отзывы
@@ -96,7 +96,7 @@ export default function ServiceCard({ service, onOpenReviews }) {
             {!isAdmin && (
               <button
                 type="button"
-                className={`service-card-btn-primary ${addedNotice ? "success-state" : ""}`}
+                className={`card-add-btn ${addedNotice ? "success" : ""} ${isOutOfStock ? "disabled" : ""}`}
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
               >
@@ -107,7 +107,7 @@ export default function ServiceCard({ service, onOpenReviews }) {
         </div>
 
         {errorNotice && (
-          <div className="card-notice-error">{errorNotice}</div>
+          <div className="card-error-notice">{errorNotice}</div>
         )}
       </div>
     </div>
