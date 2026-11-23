@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiGet, apiPost, apiPut, apiDelete } from "../api";
 import { useShop } from "../context/ShopContext";
+import { formatDuration, formatPrice } from "../utils";
 import Loader from "../components/Loader";
 import ErrorBox from "../components/ErrorBox";
 import "./Admin.css";
@@ -382,6 +383,10 @@ export default function Admin() {
   };
 
   const handleUpdateUserRole = async (userId, roleId) => {
+    if (Number(userId) === 1) {
+      alert("Роль главного администратора не подлежит изменению!");
+      return;
+    }
     try {
       await apiPut(`/api/users/${userId}/role`, { role_id: roleId }, auth.token);
       setUsers((prev) =>
@@ -411,6 +416,10 @@ export default function Admin() {
   };
 
   const handleDeleteUser = async (userId, userName) => {
+    if (Number(userId) === 1) {
+      alert("Главного администратора нельзя удалить!");
+      return;
+    }
     if (Number(userId) === auth.user?.user_id) {
       alert("Нельзя удалить собственный аккаунт администратора");
       return;
@@ -617,12 +626,12 @@ export default function Admin() {
                               </span>
                             </td>
                             <td>
-                              <span className="table-price">{Number(s.price).toLocaleString("ru-RU")} ₽</span>
+                              <span className="table-price">{formatPrice(s.price)} ₽</span>
                               {Number(s.discount_percent) > 0 && (
                                 <span className="discount-tag"> -{s.discount_percent}%</span>
                               )}
                             </td>
-                            <td>⏱ {s.duration} мин</td>
+                            <td>⏱ {formatDuration(s.duration)}</td>
                             <td>
                               <select
                                 className="discount-quick-select"
@@ -1068,14 +1077,20 @@ export default function Admin() {
                           </td>
                           <td>{u.address || "Не указан"}</td>
                           <td>
-                            <select
-                              className="role-selector"
-                              value={u.role_id}
-                              onChange={(e) => handleUpdateUserRole(u.user_id, e.target.value)}
-                            >
-                              <option value="1">👑 Администратор</option>
-                              <option value="2">👤 Клиент</option>
-                            </select>
+                            {u.user_id === 1 || u.email === "admin@restaurant.ru" ? (
+                              <span className="role-chip" style={{ background: "#fef3c7", color: "#92400e", fontWeight: "bold", padding: "4px 8px", borderRadius: "4px" }}>
+                                👑 Главный админ
+                              </span>
+                            ) : (
+                              <select
+                                className="role-selector"
+                                value={u.role_id}
+                                onChange={(e) => handleUpdateUserRole(u.user_id, e.target.value)}
+                              >
+                                <option value="1">👑 Администратор</option>
+                                <option value="2">👤 Клиент</option>
+                              </select>
+                            )}
                           </td>
                           <td>
                             <select
@@ -1093,7 +1108,9 @@ export default function Admin() {
                             </select>
                           </td>
                           <td>
-                            {u.user_id !== auth.user?.user_id ? (
+                            {u.user_id === 1 || u.email === "admin@restaurant.ru" ? (
+                              <span style={{ color: "#94a3b8", fontSize: "13px" }}>Защищено</span>
+                            ) : u.user_id !== auth.user?.user_id ? (
                               <button
                                 className="delete-action-btn"
                                 onClick={() => handleDeleteUser(u.user_id, u.name)}
@@ -1181,7 +1198,7 @@ export default function Admin() {
                 </div>
 
                 <div className="form-group">
-                  <label>Длительность (минут) *</label>
+                  <label>Длительность (в минутах) *</label>
                   <input
                     type="number"
                     min="1"
@@ -1190,6 +1207,9 @@ export default function Admin() {
                     value={serviceForm.duration}
                     onChange={(e) => setServiceForm({ ...serviceForm, duration: e.target.value })}
                   />
+                  <small style={{ color: "#64748b", marginTop: "4px", display: "block" }}>
+                    ⏱ Формат: {formatDuration(serviceForm.duration)}
+                  </small>
                 </div>
 
                 <div className="form-group">
@@ -1481,7 +1501,7 @@ export default function Admin() {
                         <td>
                           <strong>{item.service_name}</strong>
                           <br />
-                          <small>⏱ {item.duration} мин</small>
+                          <small>⏱ {formatDuration(item.duration)}</small>
                         </td>
                         <td>
                           <span className="cat-chip">{item.category_name || "Без категории"}</span>
@@ -1489,9 +1509,9 @@ export default function Admin() {
                         <td>
                           <strong>{item.quantity} шт.</strong>
                         </td>
-                        <td>{Number(item.price).toLocaleString("ru-RU")} ₽</td>
+                        <td>{formatPrice(item.price)} ₽</td>
                         <td>
-                          <strong>{(Number(item.price) * Number(item.quantity)).toLocaleString("ru-RU")} ₽</strong>
+                          <strong>{formatPrice(Number(item.price) * Number(item.quantity))} ₽</strong>
                         </td>
                       </tr>
                     ))}

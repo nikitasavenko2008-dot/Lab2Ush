@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { apiGet, apiPut } from "../api";
+import { formatDuration, formatPrice, validatePhoneNumber } from "../utils";
 import Loader from "../components/Loader";
 import ErrorBox from "../components/ErrorBox";
 import "./Dashboard.css";
@@ -106,13 +107,9 @@ export default function Dashboard() {
       return;
     }
 
-    if (!profileForm.phone.trim()) {
-      setProfileError("Укажите контактный номер телефона");
-      return;
-    }
-    const digitsOnly = profileForm.phone.replace(/\D/g, "");
-    if (digitsOnly.length < 10) {
-      setProfileError("Номер телефона должен содержать минимум 10 цифр");
+    const phoneErr = validatePhoneNumber(profileForm.phone);
+    if (phoneErr) {
+      setProfileError(phoneErr);
       return;
     }
 
@@ -358,7 +355,7 @@ export default function Dashboard() {
                             />
                             <div>
                               <strong>{item.service_name}</strong>
-                              <small>⏱ {item.duration} мин</small>
+                              <small>⏱ {formatDuration(item.duration)}</small>
                             </div>
                           </div>
 
@@ -369,7 +366,7 @@ export default function Dashboard() {
                           <div className="service-qty-cell">{item.quantity} шт.</div>
 
                           <div className="service-price-cell">
-                            {(Number(item.price) * Number(item.quantity)).toLocaleString("ru-RU")} ₽
+                            {formatPrice(Number(item.price) * Number(item.quantity))} ₽
                           </div>
                         </div>
                       ))}
@@ -383,11 +380,11 @@ export default function Dashboard() {
                     <div className="order-total-sum">
                       {Number(order.subtotal_amount) > Number(order.total_amount) && (
                         <span style={{ fontSize: "0.85rem", color: "#64748b", marginRight: "8px" }}>
-                          Без скидки: <s>{Number(order.subtotal_amount).toLocaleString("ru-RU")} ₽</s>
+                          Без скидки: <s>{formatPrice(order.subtotal_amount)} ₽</s>
                         </span>
                       )}
                       <span>Итого к оплате:</span>
-                      <strong>{Number(order.total_amount).toLocaleString("ru-RU")} ₽</strong>
+                      <strong>{formatPrice(order.total_amount)} ₽</strong>
                     </div>
                   </div>
                 </div>

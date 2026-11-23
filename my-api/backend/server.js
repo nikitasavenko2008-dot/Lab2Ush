@@ -131,6 +131,42 @@ function adminMiddleware(req, res, next) {
   });
 }
 
+function validatePhoneNumber(phone) {
+  if (!phone || typeof phone !== "string" || !phone.trim()) {
+    return "Укажите контактный номер телефона";
+  }
+  const trimmed = phone.trim();
+  const digits = trimmed.replace(/\D/g, "");
+
+  if (digits.length !== 10 && digits.length !== 11) {
+    return "Номер телефона должен содержать 10 или 11 цифр (например, +7 (999) 123-45-67)";
+  }
+
+  const uniqueDigits = new Set(digits.split(""));
+  if (uniqueDigits.size <= 2) {
+    return "Некорректный номер телефона (не может состоять из одинаковых цифр)";
+  }
+
+  if (
+    digits.includes("12345678") ||
+    digits.includes("98765432") ||
+    digits.includes("01234567")
+  ) {
+    return "Некорректный номер телефона (фиктивная последовательность цифр)";
+  }
+
+  if (digits.length === 11 && digits[0] !== "7" && digits[0] !== "8") {
+    return "Номер телефона из 11 цифр должен начинаться с +7 или 8";
+  }
+
+  const mainPart = digits.length === 11 ? digits.slice(1) : digits;
+  if (!mainPart.startsWith("9") && !mainPart.startsWith("4") && !mainPart.startsWith("8") && !mainPart.startsWith("3")) {
+    return "Некорректный код оператора или региона в номере телефона";
+  }
+
+  return null;
+}
+
 app.post("/api/auth/register", async (req, res) => {
   const { name, email, password, phone, address = "" } = req.body;
   if (!name?.trim() || !email?.trim() || !password?.trim() || !phone?.trim()) {
@@ -140,6 +176,11 @@ app.post("/api/auth/register", async (req, res) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.trim())) {
     return res.status(400).json({ error: "Введите корректный адрес электронной почты" });
+  }
+
+  const phoneError = validatePhoneNumber(phone);
+  if (phoneError) {
+    return res.status(400).json({ error: phoneError });
   }
 
   if (password.length < 5) {
@@ -240,9 +281,9 @@ app.put("/api/auth/profile", authMiddleware, async (req, res) => {
     return res.status(400).json({ error: "Введите корректный адрес электронной почты" });
   }
 
-  const cleanPhone = phone.trim().replace(/[^\d+]/g, "");
-  if (cleanPhone.length < 10) {
-    return res.status(400).json({ error: "Номер телефона должен содержать не менее 10 цифр" });
+  const phoneError = validatePhoneNumber(phone);
+  if (phoneError) {
+    return res.status(400).json({ error: phoneError });
   }
 
   try {
@@ -677,7 +718,7 @@ app.get("/api/cart", authMiddleware, async (req, res) => {
          COALESCE(s.stock_quantity, 15) AS stock_quantity,
          COALESCE(s.image, 'https://images.unsplash.com/photo-1555244162-803834f70033?w=300&auto=format&fit=crop&q=80') AS image,
          COALESCE(c.name, 'Без категории') AS category_name,
-         (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN ROUND(s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
+         (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN (s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        LEFT JOIN categories c ON s.category_id = c.category_id
@@ -736,7 +777,7 @@ app.post("/api/cart", authMiddleware, async (req, res) => {
               COALESCE(s.stock_quantity, 15) AS stock_quantity,
               COALESCE(s.image, 'https://images.unsplash.com/photo-1555244162-803834f70033?w=300&auto=format&fit=crop&q=80') AS image,
               COALESCE(c.name, 'Без категории') AS category_name,
-              (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN ROUND(s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
+              (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN (s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        LEFT JOIN categories c ON s.category_id = c.category_id
@@ -785,7 +826,7 @@ app.put("/api/cart/:id", authMiddleware, async (req, res) => {
               COALESCE(s.stock_quantity, 15) AS stock_quantity,
               COALESCE(s.image, 'https://images.unsplash.com/photo-1555244162-803834f70033?w=300&auto=format&fit=crop&q=80') AS image,
               COALESCE(c.name, 'Без категории') AS category_name,
-              (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN ROUND(s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
+              (ci.quantity * (CASE WHEN s.discount_percent > 0 THEN (s.price * (1.0 - s.discount_percent / 100.0)) ELSE s.price END)) AS total_item_price
        FROM cart_items ci
        JOIN services s ON ci.service_id = s.service_id
        LEFT JOIN categories c ON s.category_id = c.category_id
@@ -868,13 +909,13 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
     }
 
     const subtotalAmount = cartItems.reduce((sum, item) => {
-      const effPrice = item.discount_percent > 0 ? Math.round(item.price * (1 - item.discount_percent / 100)) : item.price;
-      return sum + effPrice * item.quantity;
+      const effPrice = item.discount_percent > 0 ? Number((item.price * (1 - item.discount_percent / 100)).toFixed(2)) : Number(item.price);
+      return Number((sum + effPrice * item.quantity).toFixed(2));
     }, 0);
 
     const userRows = await queryDB("SELECT COALESCE(personal_discount_percent, 0) AS personal_discount_percent FROM users WHERE user_id = ?", [req.user.user_id]);
     const personalDiscountPercent = Number(userRows[0]?.personal_discount_percent) || 0;
-    const personalDiscountVal = personalDiscountPercent > 0 ? Math.round((subtotalAmount * personalDiscountPercent) / 100) : 0;
+    const personalDiscountVal = personalDiscountPercent > 0 ? Number(((subtotalAmount * personalDiscountPercent) / 100).toFixed(2)) : 0;
 
     let cleanCouponCode = "";
     let couponDiscountPercent = 0;
@@ -888,9 +929,9 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
         couponDiscountPercent = Number(cpnRows[0].discount_percent) || 0;
       }
     }
-    const couponDiscountVal = couponDiscountPercent > 0 ? Math.round(((subtotalAmount - personalDiscountVal) * couponDiscountPercent) / 100) : 0;
+    const couponDiscountVal = couponDiscountPercent > 0 ? Number((((subtotalAmount - personalDiscountVal) * couponDiscountPercent) / 100).toFixed(2)) : 0;
 
-    const totalAmount = Math.max(0, subtotalAmount - personalDiscountVal - couponDiscountVal);
+    const totalAmount = Math.max(0, Number((subtotalAmount - personalDiscountVal - couponDiscountVal).toFixed(2)));
 
     const orderRes = await queryDB(
       `INSERT INTO orders (user_id, delivery_address, delivery_date, delivery_time, total_amount, coupon_code, coupon_discount_percent, personal_discount_percent, subtotal_amount, status, notes)
@@ -912,7 +953,7 @@ app.post("/api/orders", authMiddleware, async (req, res) => {
     const orderId = orderRes[0].order_id || orderRes[0].insertId;
 
     for (const item of cartItems) {
-      const finalItemPrice = item.discount_percent > 0 ? Math.round(item.price * (1 - item.discount_percent / 100)) : item.price;
+      const finalItemPrice = item.discount_percent > 0 ? Number((item.price * (1 - item.discount_percent / 100)).toFixed(2)) : Number(item.price);
       await queryDB(
         "INSERT INTO order_items (order_id, service_id, quantity, price) VALUES (?, ?, ?, ?)",
         [orderId, item.service_id, item.quantity, finalItemPrice]
@@ -1230,6 +1271,14 @@ app.put("/api/users/:id/role", adminMiddleware, async (req, res) => {
   }
 
   try {
+    const targetUser = await queryDB("SELECT user_id, email FROM users WHERE user_id = ?", [id]);
+    if (targetUser.length === 0) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    if (Number(id) === 1 || targetUser[0].email === "admin@restaurant.ru") {
+      return res.status(400).json({ error: "Роль главного администратора не подлежит изменению" });
+    }
+
     await queryDB("UPDATE users SET role_id = ? WHERE user_id = ?", [Number(role_id), id]);
     res.json({ success: true, message: "Роль пользователя успешно обновлена" });
   } catch (err) {
@@ -1244,6 +1293,14 @@ app.delete("/api/users/:id", adminMiddleware, async (req, res) => {
   }
 
   try {
+    const targetUser = await queryDB("SELECT user_id, email FROM users WHERE user_id = ?", [id]);
+    if (targetUser.length === 0) {
+      return res.status(404).json({ error: "Пользователь не найден" });
+    }
+    if (Number(id) === 1 || targetUser[0].email === "admin@restaurant.ru") {
+      return res.status(400).json({ error: "Главного администратора нельзя удалить" });
+    }
+
     await queryDB("DELETE FROM cart_items WHERE user_id = ?", [id]);
     await queryDB("DELETE FROM reviews WHERE user_id = ?", [id]);
     await queryDB("DELETE FROM users WHERE user_id = ?", [id]);

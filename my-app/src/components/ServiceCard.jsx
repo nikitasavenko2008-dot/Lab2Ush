@@ -1,7 +1,7 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
+import { formatDuration, formatPrice } from "../utils";
 import "./ServiceCard.css";
 
 export default function ServiceCard({ service, onOpenReviews }) {
@@ -36,9 +36,10 @@ export default function ServiceCard({ service, onOpenReviews }) {
   const reviewsCount = Number(service.reviews_count) || 0;
   const discountPercent = Number(service.discount_percent) || 0;
   const hasDiscount = discountPercent > 0;
+  const rawPrice = Number(service.price) || 0;
   const finalPrice = hasDiscount
-    ? Math.round(Number(service.price) * (1 - discountPercent / 100))
-    : Number(service.price);
+    ? Number((rawPrice * (1 - discountPercent / 100)).toFixed(2))
+    : rawPrice;
   const stock = service.stock_quantity !== undefined ? Number(service.stock_quantity) : 15;
   const isOutOfStock = stock <= 0;
 
@@ -59,7 +60,7 @@ export default function ServiceCard({ service, onOpenReviews }) {
             <span className="rating-value">{numRating > 0 ? numRating.toFixed(1) : "—"}</span>
             <span className="reviews-counter">({reviewsCount} отзывов)</span>
           </div>
-          <span className="card-duration">⏱ {service.duration} мин</span>
+          <span className="card-duration">⏱ {formatDuration(service.duration)}</span>
         </div>
 
         <h3 className="card-title">{service.name}</h3>
@@ -75,38 +76,39 @@ export default function ServiceCard({ service, onOpenReviews }) {
           <div className="card-price-container">
             {hasDiscount ? (
               <div className="price-discount-wrapper">
-                <span className="old-strikethrough-price">{Number(service.price).toLocaleString("ru-RU")} ₽</span>
-                <span className="card-price discounted-color">{finalPrice.toLocaleString("ru-RU")} ₽</span>
+                <span className="old-strikethrough-price">{formatPrice(rawPrice)} ₽</span>
+                <span className="card-price discounted-color">{formatPrice(finalPrice)} ₽</span>
               </div>
             ) : (
-              <span className="card-price">{Number(service.price).toLocaleString("ru-RU")} ₽</span>
+              <span className="card-price">{formatPrice(rawPrice)} ₽</span>
             )}
           </div>
 
-          <div className="card-actions">
+          <div className="card-actions-wrapper">
             <button
               type="button"
-              className="card-reviews-btn"
+              className="service-card-btn-secondary"
               onClick={onOpenReviews}
-              title="Посмотреть отзывы"
             >
-              💬 Отзывы
+              Отзывы
             </button>
 
             {!isAdmin && (
               <button
                 type="button"
-                className={`card-add-btn ${addedNotice ? "success" : ""} ${isOutOfStock ? "disabled" : ""}`}
+                className={`service-card-btn-primary ${addedNotice ? "success-state" : ""}`}
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
               >
-                {isOutOfStock ? "Закончилось" : addedNotice ? "✓ В корзине" : "+ В корзину"}
+                {addedNotice ? "✓ В корзине" : isOutOfStock ? "Закончился" : "В корзину"}
               </button>
             )}
           </div>
         </div>
 
-        {errorNotice && <div className="card-error-notice">{errorNotice}</div>}
+        {errorNotice && (
+          <div className="card-notice-error">{errorNotice}</div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useShop } from "../context/ShopContext";
 import { apiPost } from "../api";
+import { formatDuration, formatPrice } from "../utils";
 import Loader from "../components/Loader";
 import ErrorBox from "../components/ErrorBox";
 import "./Cart.css";
@@ -68,19 +69,19 @@ export default function Cart() {
   const subtotal = cart.reduce((sum, item) => {
     const rawP = Number(item.price) || 0;
     const disc = Number(item.discount_percent) || 0;
-    const effP = disc > 0 ? Math.round(rawP * (1 - disc / 100)) : rawP;
-    return sum + effP * (Number(item.quantity) || 1);
+    const effP = disc > 0 ? Number((rawP * (1 - disc / 100)).toFixed(2)) : rawP;
+    return Number((sum + effP * (Number(item.quantity) || 1)).toFixed(2));
   }, 0);
 
   const personalDiscountAmount =
-    userPersonalDiscount > 0 ? Math.round((subtotal * userPersonalDiscount) / 100) : 0;
+    userPersonalDiscount > 0 ? Number(((subtotal * userPersonalDiscount) / 100).toFixed(2)) : 0;
 
   const promoDiscountAmount = appliedPromo
-    ? Math.round(((subtotal - personalDiscountAmount) * appliedPromo.discountPercent) / 100)
+    ? Number((((subtotal - personalDiscountAmount) * appliedPromo.discountPercent) / 100).toFixed(2))
     : 0;
 
-  const totalDiscount = personalDiscountAmount + promoDiscountAmount;
-  const totalAmount = Math.max(0, subtotal - totalDiscount);
+  const totalDiscount = Number((personalDiscountAmount + promoDiscountAmount).toFixed(2));
+  const totalAmount = Number(Math.max(0, subtotal - totalDiscount).toFixed(2));
 
   const handleCheckout = async (e) => {
     e.preventDefault();
@@ -245,10 +246,10 @@ export default function Cart() {
                   const rawPrice = Number(item.price) || 0;
                   const discountPercent = Number(item.discount_percent) || 0;
                   const effectiveUnitPrice =
-                    discountPercent > 0 ? Math.round(rawPrice * (1 - discountPercent / 100)) : rawPrice;
+                    discountPercent > 0 ? Number((rawPrice * (1 - discountPercent / 100)).toFixed(2)) : rawPrice;
                   const itemQty = Number(item.quantity) || 1;
                   const itemStock = item.stock_quantity !== undefined ? Number(item.stock_quantity) : 15;
-                  const itemTotal = effectiveUnitPrice * itemQty;
+                  const itemTotal = Number((effectiveUnitPrice * itemQty).toFixed(2));
                   const isMaxStock = itemQty >= itemStock;
 
                   return (
@@ -270,20 +271,20 @@ export default function Cart() {
                         <span className="cart-item-category">{item.category_name || "Без категории"}</span>
                         <h4 className="cart-item-title">{item.name}</h4>
                         <div className="cart-item-meta">
-                          <span>⏱ {item.duration} мин</span>
+                          <span>⏱ {formatDuration(item.duration)}</span>
                           <span className="unit-price">
                             {discountPercent > 0 ? (
                               <>
                                 <s style={{ color: "#94a3b8", marginRight: "5px" }}>
-                                  {rawPrice.toLocaleString("ru-RU")} ₽
+                                  {formatPrice(rawPrice)} ₽
                                 </s>
                                 <strong style={{ color: "#dc2626" }}>
-                                  {effectiveUnitPrice.toLocaleString("ru-RU")} ₽
+                                  {formatPrice(effectiveUnitPrice)} ₽
                                 </strong>{" "}
                                 <span style={{ color: "#ef4444", fontWeight: "bold" }}>(-{discountPercent}%)</span>
                               </>
                             ) : (
-                              `${rawPrice.toLocaleString("ru-RU")} ₽ / позиция`
+                              `${formatPrice(rawPrice)} ₽ / позиция`
                             )}
                           </span>
                           <span className="cart-item-stock-tag">
@@ -318,7 +319,7 @@ export default function Cart() {
                       </div>
 
                       <div className="cart-item-sum-block">
-                        <span className="cart-item-total">{itemTotal.toLocaleString("ru-RU")} ₽</span>
+                        <span className="cart-item-total">{formatPrice(itemTotal)} ₽</span>
                         <button
                           type="button"
                           className="cart-item-remove-btn"
@@ -432,27 +433,27 @@ export default function Cart() {
                 <div className="order-totals-breakdown">
                   <div className="totals-row">
                     <span>Подытог:</span>
-                    <span>{subtotal.toLocaleString("ru-RU")} ₽</span>
+                    <span>{formatPrice(subtotal)} ₽</span>
                   </div>
 
                   {userPersonalDiscount > 0 && (
                     <div className="totals-row discount-row">
                       <span>Личная скидка клиента ({userPersonalDiscount}%):</span>
-                      <span>-{personalDiscountAmount.toLocaleString("ru-RU")} ₽</span>
+                      <span>-{formatPrice(personalDiscountAmount)} ₽</span>
                     </div>
                   )}
 
                   {appliedPromo && (
                     <div className="totals-row discount-row">
                       <span>Промокод {appliedPromo.code} ({appliedPromo.discountPercent}%):</span>
-                      <span>-{promoDiscountAmount.toLocaleString("ru-RU")} ₽</span>
+                      <span>-{formatPrice(promoDiscountAmount)} ₽</span>
                     </div>
                   )}
 
                   <div className="totals-row final-total-row">
                     <span>Итого к оплате:</span>
                     <span className="total-highlight">
-                      {totalAmount.toLocaleString("ru-RU")} ₽
+                      {formatPrice(totalAmount)} ₽
                     </span>
                   </div>
                 </div>

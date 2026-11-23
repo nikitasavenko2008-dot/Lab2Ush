@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiPost } from "../api";
 import { useShop } from "../context/ShopContext";
+import { validatePhoneNumber } from "../utils";
 import ErrorBox from "../components/ErrorBox";
 import "./Register.css";
 
@@ -47,8 +48,9 @@ export default function Register() {
       return;
     }
 
-    if (!formData.phone.trim()) {
-      setError("Укажите контактный номер телефона");
+    const phoneErr = validatePhoneNumber(formData.phone);
+    if (phoneErr) {
+      setError(phoneErr);
       return;
     }
 
